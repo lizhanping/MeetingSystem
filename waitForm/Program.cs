@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 
-namespace MeetingSystemServer
+namespace waitForm
 {
     static class Program
     {
@@ -15,16 +15,7 @@ namespace MeetingSystemServer
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            try
-            {
-                Application.Run(new MainForm());
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-                Application.Exit();
-            }
-            
+            Application.Run(new waitForm());
         }
     }
 }
