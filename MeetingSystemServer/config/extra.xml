@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+	<title>欢迎使用便携式无纸化会议系统</title>
+	<label1>会议主题：</label1>
+	<label2>办会部门：</label2>
+	<label3>办 会 人：</label3>
+	<button1>开始会议</button1>
+</config>

@@ -476,48 +476,6 @@ namespace DataService
                 }
             }
         }
-
-        public static byte[] Encrypt(byte[] origin)
-        {
-            using (RijndaelManaged myRijndael = new RijndaelManaged())
-            {
-                myRijndael.Key = key;
-                myRijndael.IV = IV;
-                // myRijndael.Padding = PaddingMode.None;//no padding
-                myRijndael.Padding = PaddingMode.PKCS7;
-                ICryptoTransform ic = myRijndael.CreateEncryptor(key, IV);
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    using (CryptoStream cs = new CryptoStream(ms, ic, CryptoStreamMode.Write))
-                    {
-                        cs.Write(origin, 0, origin.Length);
-                        cs.FlushFinalBlock();
-                        return ms.ToArray();
-                    }
-                }
-            }
-        }
-
-        public static byte[] Decrypt(byte[] origin)
-        {
-            using (RijndaelManaged myRijndael = new RijndaelManaged())
-            {
-                myRijndael.Key = key;
-                myRijndael.IV = IV;
-                //myRijndael.Padding = PaddingMode.None;
-                myRijndael.Padding = PaddingMode.PKCS7;
-                ICryptoTransform ic = myRijndael.CreateDecryptor(key, IV);
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    using (CryptoStream cs = new CryptoStream(ms, ic, CryptoStreamMode.Write))
-                    {
-                        cs.Write(origin, 0, origin.Length);
-                        cs.FlushFinalBlock();
-                        return ms.ToArray();
-                    }
-                }
-            }
-        }
     }
     /// <summary>
     /// 文件系统控制类

@@ -11,6 +11,8 @@ using System.IO;
 using System.Diagnostics;
 using MSExcel = Microsoft.Office.Interop.Excel;
 using System.Xml;
+using System.Threading;
+
 
 namespace MeetingSystemServer
 {
@@ -30,7 +32,34 @@ namespace MeetingSystemServer
         private void HistoryMeeting_Load(object sender, EventArgs e)
         {
             baseFold = Application.StartupPath + "\\MeetingFold";
+            loadImageList(smallImageList, Application.StartupPath + @"\config\smallIcon.xml");
+            loadImageList(largeImageList, Application.StartupPath + @"\config\largeIcon.xml");
             LoadHistory();
+        }
+        /// <summary>
+        /// 加载图标集合
+        /// </summary>
+        private void loadImageList(ImageList imageList, string filePath)
+        {
+            string configFile = filePath;
+            if (!File.Exists(configFile))
+            {
+                return;//保持默认
+            }
+            //存在，就加载
+            imageList.Images.Clear();
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.Load(configFile);
+            XmlNode rootNode = xmlDoc.SelectSingleNode("config");
+            foreach (XmlNode xn in rootNode.ChildNodes)
+            {
+                string imagePath = Application.StartupPath + "\\" + xn.InnerText;
+                if (File.Exists(imagePath))
+                {
+                    Bitmap image = new Bitmap(imagePath);
+                    imageList.Images.Add(xn.Attributes["name"].Value, image);
+                }
+            }
         }
         /// <summary>
         /// 读取数据库，加载历史
@@ -148,7 +177,7 @@ namespace MeetingSystemServer
                 {
                     if (x is DirectoryInfo)
                     {
-                        ListViewItem lvi = new ListViewItem(x.Name, 0);
+                        ListViewItem lvi = new ListViewItem(x.Name, getIndexByFileExtention(".folder"));
                         lvi.SubItems.Add(x.LastWriteTimeUtc.ToString());
                         lvi.SubItems.Add("");
                         lvi.SubItems.Add(x.FullName);
@@ -177,25 +206,23 @@ namespace MeetingSystemServer
         /// <returns></returns>
         private int getIndexByFileExtention(string ext)
         {
-            int value = 9;
-            switch (ext)
+            if (detailListView.View == View.Details)
             {
-                case ".rar":
-                case ".zip": value = 1; break;
-                case ".doc":
-                case ".dot":
-                case ".docx": value = 2; break;
-                case ".xls":
-                case ".xlsx": value = 3; break;
-                case ".ppt":
-                case ".pptx": value = 4; break;
-                case ".pdf": value = 5; break;
-                case ".png": value = 6; break;
-                case ".jpg": value = 7; break;
-                case ".txt": value = 8; break;
-                default: value = 9; break;
+                if (smallImageList.Images.Keys.Contains(ext))
+                {
+                    return smallImageList.Images.IndexOfKey(ext);
+                }
+                return smallImageList.Images.IndexOfKey(".unkown");
             }
-            return value;
+            else
+            {
+                if (largeImageList.Images.Keys.Contains(ext))
+                {
+                    return largeImageList.Images.IndexOfKey(ext);
+                }
+                return largeImageList.Images.IndexOfKey(".unkown");
+            }
+
         }
         /// <summary>
         /// 详细视图
@@ -281,13 +308,26 @@ namespace MeetingSystemServer
         {
             if (MessageBox.Show("确定要清除本次会议空间吗？（清除后不可恢复）","提示！",MessageBoxButtons.YesNo,MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                DataService.SecurityDelete.DoSecurityDeleteFolder(historyTree.SelectedNode.Name,Int32.Parse(readValueFromConfigByNode("clearLevel").ToString()) ,false);
+                Thread deleteThread = new Thread(new ParameterizedThreadStart(processDelete));
+                waitForm.waitForm wf = new waitForm.waitForm();
+                wf.setText("正在清理...");
+                wf.setMonit(deleteThread,historyTree.SelectedNode.Name);
+                wf.ShowDialog();
                 historyTree.SelectedNode.ImageIndex = 0;
                 historyTree.SelectedNode.SelectedImageIndex = 0;
                 detailListView.Items.Clear();
                 MessageBox.Show("清理成功！");
                 return;
             }
+        }
+        /// <summary>
+        /// 删除进程
+        /// </summary>
+        private void processDelete(object path)
+        {
+            string folder = (string)path;
+            DataService.SecurityDelete.DoSecurityDeleteFolder(folder, Int32.Parse(readValueFromConfigByNode("clearLevel").ToString()), false);
+
         }
         /// <summary>
         /// 全部导出
@@ -329,7 +369,6 @@ namespace MeetingSystemServer
         {
 
         }
-
         /// <summary>
         /// 读取配置文件节点的值
         /// </summary>
@@ -337,7 +376,7 @@ namespace MeetingSystemServer
         /// <returns></returns>
         private object readValueFromConfigByNode(string node)
         {
-            string path = Application.StartupPath + "//config.xml";
+            string path = Application.StartupPath + @"\config\config.xml";
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.Load(path);
             return xmlDoc.SelectSingleNode("config").SelectSingleNode(node).InnerText;

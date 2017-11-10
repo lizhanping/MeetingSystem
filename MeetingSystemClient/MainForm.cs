@@ -12,6 +12,8 @@ using System.Net.Sockets;
 using System.Threading;
 using DataService;
 using System.Diagnostics;
+using System.Xml;
+using waitForm;
 
 namespace MeetingSystemClient
 {
@@ -84,6 +86,8 @@ namespace MeetingSystemClient
         /// <param name="e"></param>
         private void MainForm_Load(object sender, EventArgs e)
         {
+            loadImageList(smallImageList, Application.StartupPath + @"\config\smallIcon.xml");
+            loadImageList(largeImageList, Application.StartupPath + @"\config\largeIcon.xml");
             #region 初始化会议空间
             if (Directory.Exists(Application.StartupPath + @"\MeetingFold"))
             {
@@ -118,6 +122,31 @@ namespace MeetingSystemClient
             myThread.Start();
             //Console.ReadLine();
             #endregion
+        }
+        /// <summary>
+        /// 加载图标集合
+        /// </summary>
+        private void loadImageList(ImageList imageList, string filePath)
+        {
+            string configFile = filePath;
+            if (!File.Exists(configFile))
+            {
+                return;//保持默认
+            }
+            //存在，就加载
+            imageList.Images.Clear();
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.Load(configFile);
+            XmlNode rootNode = xmlDoc.SelectSingleNode("config");
+            foreach (XmlNode xn in rootNode.ChildNodes)
+            {
+                string imagePath = Application.StartupPath + "\\" + xn.InnerText;
+                if (File.Exists(imagePath))
+                {
+                    Bitmap image = new Bitmap(imagePath);
+                    imageList.Images.Add(xn.Attributes["name"].Value, image);
+                }
+            }
         }
         /// <summary>
         /// 创建日志文件
@@ -689,24 +718,44 @@ namespace MeetingSystemClient
         /// 发送选中的文件
         /// </summary>
         /// <param name="fileName"></param>
-        private void SendSelectFileByFileName(Socket clientSocket, string x)
+        private void SendSelectFileByFileName(Socket clientSocket, string fileName)
         {
-            string DirName = DataService.DataService.getDirNameByFullPath(GlobalInfo.MeetingFold, x);//先获取中间部分
+            string basePath = GlobalInfo.MeetingFold;
+            string transFileName = fileName;
+            string DirName = DataService.DataService.getDirNameByFullPath(GlobalInfo.MeetingFold, fileName);//先获取中间部分
             //文件：先建文件夹，再传数据
             if (DirName != "") //不为空，则创建，为空，说明是在根目录，不用新建了
                 CreateFolder(clientSocket, DirName);
             if (waterMark) //兼容水印处理
             {
+                try
+                {
+                    //现将该文件copy至临时目录，然后进行水印处理，同时更新basepath、transfilename
+                    string destFileName = Path.GetTempPath() + Path.GetFileName(fileName);
+                    if (File.Exists(destFileName))
+                    {
+                        File.Delete(destFileName);
+                    }
+                    File.Copy(fileName, destFileName);
+                    File.Move(destFileName, destFileName);
+                    //先加密处理
 
+                    basePath = Path.GetTempPath().Substring(0, Path.GetTempPath().Length - 1);
+                    transFileName = destFileName;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
 
-            if (DataService.DataService.SendFile(clientSocket, GlobalInfo.MeetingFold, x, encrypt) == 0)
+            if (DataService.DataService.SendFile(clientSocket, basePath, transFileName, encrypt) == 0)
             {
-                Console.WriteLine("文件：" + x + "发送成功！");
+                Console.WriteLine("文件：" + fileName + "发送成功！");
             }
             else
             {
-                Console.WriteLine("文件：" + x + "发送失败！");
+                Console.WriteLine("文件：" + fileName + "发送失败！");
             }
         }
         /// <summary>
@@ -791,11 +840,22 @@ namespace MeetingSystemClient
         /// </summary>
         private void clearMeetingSpace()
         {
-            //再清除整个会议空间
-            SecurityDelete.DoSecurityDeleteFolder(GlobalInfo.MeetingFold,deleteNumb,false);
+            Thread deleteThread = new Thread(new ThreadStart(processDelete));
+            waitForm.waitForm wf = new waitForm.waitForm();
+            wf.setText("正在清除...");
+            wf.setMonit(deleteThread);
+            wf.ShowDialog();
             //清空树节点和listview
             localSpace.Nodes.Clear();
             detailListView.Items.Clear();
+        }
+        /// <summary>
+        /// 删除处理
+        /// </summary>
+        private void processDelete()
+        {
+            //再清除整个会议空间
+            SecurityDelete.DoSecurityDeleteFolder(GlobalInfo.MeetingFold, deleteNumb, false);
         }
         /// <summary>
         /// 清除其余的临时文件
@@ -909,7 +969,7 @@ namespace MeetingSystemClient
             DirectoryInfo[] dirs = di.GetDirectories();
             foreach (DirectoryInfo x in dirs)
             {
-                ListViewItem lvi = new ListViewItem(x.Name, 0);
+                ListViewItem lvi = new ListViewItem(x.Name,getIndexByFileExtention(".folder"));
                 lvi.SubItems.Add(x.LastWriteTimeUtc.ToString());
                 lvi.SubItems.Add("");
                 lvi.SubItems.Add(x.FullName);
@@ -949,25 +1009,23 @@ namespace MeetingSystemClient
         /// <returns></returns>
         private int getIndexByFileExtention(string ext)
         {
-            int value = 9;
-            switch (ext)
+            if (detailListView.View == View.Details)
             {
-                case ".rar":
-                case ".zip": value = 1; break;
-                case ".doc":
-                case ".dot":
-                case ".docx": value = 2; break;
-                case ".xls":
-                case ".xlsx": value = 3; break;
-                case ".ppt":
-                case ".pptx": value = 4; break;
-                case ".pdf": value = 5; break;
-                case ".png": value = 6; break;
-                case ".jpg": value = 7; break;
-                case ".txt": value = 8; break;
-                default: value = 9; break;
+                if (smallImageList.Images.Keys.Contains(ext))
+                {
+                    return smallImageList.Images.IndexOfKey(ext);
+                }
+                return smallImageList.Images.IndexOfKey(".unkown");
             }
-            return value;
+            else
+            {
+                if (largeImageList.Images.Keys.Contains(ext))
+                {
+                    return largeImageList.Images.IndexOfKey(ext);
+                }
+                return largeImageList.Images.IndexOfKey(".unkown");
+            }
+
         }
         /// <summary>
         /// 查看详细视图

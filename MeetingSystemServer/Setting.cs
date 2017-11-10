@@ -40,7 +40,7 @@ namespace MeetingSystemServer
                 MessageBox.Show("客户端设置数目必须为数字，且范围为1～254");
                 return;
             }
-            string cfgFilePath = Application.StartupPath + "//config.xml";
+            string cfgFilePath = Application.StartupPath + @"\config\config.xml";
             XmlDocument xmlDoc = new XmlDocument();
             try
             {
@@ -190,7 +190,7 @@ namespace MeetingSystemServer
         /// </summary>
         private void readConfig()
         {
-            string cfgFilePath = Application.StartupPath + "//config.xml";
+            string cfgFilePath = Application.StartupPath + @"\config\config.xml";
             XmlDocument xmlDoc = new XmlDocument();
             try
             {

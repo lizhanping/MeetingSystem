@@ -45,6 +45,7 @@
             this.settingBtn = new System.Windows.Forms.Button();
             this.exitBtn = new System.Windows.Forms.Button();
             this.capacity = new System.Windows.Forms.Label();
+            this.helpBtn = new System.Windows.Forms.Button();
             this.startMeeting = new System.Windows.Forms.Button();
             this.myToolTip = new System.Windows.Forms.ToolTip(this.components);
             this.tableLayoutPanel1.SuspendLayout();
@@ -205,12 +206,13 @@
             this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 80F));
             this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 80F));
             this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 80F));
+            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 80F));
             this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 334F));
             this.tableLayoutPanel5.Controls.Add(this.historyBtn, 0, 0);
+            this.tableLayoutPanel5.Controls.Add(this.exitBtn, 3, 0);
             this.tableLayoutPanel5.Controls.Add(this.settingBtn, 1, 0);
-            this.tableLayoutPanel5.Controls.Add(this.exitBtn, 2, 0);
             this.tableLayoutPanel5.Controls.Add(this.capacity, 4, 0);
+            this.tableLayoutPanel5.Controls.Add(this.helpBtn, 2, 0);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel5.Location = new System.Drawing.Point(3, 111);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
@@ -253,7 +255,7 @@
             this.exitBtn.FlatAppearance.BorderSize = 0;
             this.exitBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.exitBtn.Image = global::MeetingSystemServer.Properties.Resources.exitSystem;
-            this.exitBtn.Location = new System.Drawing.Point(163, 3);
+            this.exitBtn.Location = new System.Drawing.Point(243, 3);
             this.exitBtn.Name = "exitBtn";
             this.exitBtn.Size = new System.Drawing.Size(74, 71);
             this.exitBtn.TabIndex = 10;
@@ -272,6 +274,20 @@
             this.capacity.Size = new System.Drawing.Size(93, 17);
             this.capacity.TabIndex = 7;
             this.capacity.Text = "剩余空间：";
+            // 
+            // helpBtn
+            // 
+            this.helpBtn.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.helpBtn.FlatAppearance.BorderSize = 0;
+            this.helpBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.helpBtn.Image = global::MeetingSystemServer.Properties.Resources.help;
+            this.helpBtn.Location = new System.Drawing.Point(163, 3);
+            this.helpBtn.Name = "helpBtn";
+            this.helpBtn.Size = new System.Drawing.Size(74, 71);
+            this.helpBtn.TabIndex = 11;
+            this.helpBtn.UseVisualStyleBackColor = true;
+            this.helpBtn.Click += new System.EventHandler(this.helpBtn_Click);
+            this.helpBtn.MouseEnter += new System.EventHandler(this.helpBtn_MouseEnter);
             // 
             // startMeeting
             // 
@@ -333,6 +349,7 @@
         private System.Windows.Forms.Button settingBtn;
         private System.Windows.Forms.Button exitBtn;
         private System.Windows.Forms.ToolTip myToolTip;
+        private System.Windows.Forms.Button helpBtn;
     }
 }
 

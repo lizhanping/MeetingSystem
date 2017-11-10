@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+<config>
+  <kind name=".folder">smallIcon//folder.png</kind>
+  <kind name=".xls">smallIcon//excel.png</kind>
+  <kind name=".xlsx">smallIcon//excel.png</kind>
+  <kind name=".ppt">smallIcon//ppt.png</kind>
+  <kind name=".pptx">smallIcon//ppt.png</kind>
+  <kind name=".doc">smallIcon//word.png</kind>
+  <kind name=".docx">smallIcon//word.png</kind>
+  <kind name=".dot">smallIcon//word.png</kind>
+  <kind name=".rar">smallIcon//rar.png</kind>
+  <kind name=".zip">smallIcon//rar.png</kind>
+  <kind name=".txt">smallIcon//txt.png</kind>
+  <kind name=".jpg">smallIcon//png.png</kind>
+  <kind name=".png">smallIcon//png.png</kind>
+  <kind name=".pdf">smallIcon//pdf.png</kind>
+  <kind name=".unkown">smallIcon//unkown.png</kind>
+  </config>

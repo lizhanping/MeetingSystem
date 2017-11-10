@@ -1,0 +1,33 @@
+<config>
+  <clientMaxNum>40</clientMaxNum>
+  <waterMark>False</waterMark>
+  <encrypt>False</encrypt>
+  <defaultTopic default="0">
+    <topic>会议4</topic>
+    <topic>会议5</topic>
+    <topic>会议6</topic>
+  </defaultTopic>
+  <createByDate>False</createByDate>
+  <defaultDepart default="0">
+    <part>部门1</part>
+    <part>部门2</part>
+    <part>部门3</part>
+  </defaultDepart>
+  <defaultCreater default="0">
+    <creater>人员1</creater>
+    <creater>人员2</creater>
+    <creater>人员3</creater>
+  </defaultCreater>
+  <clearLevel>0</clearLevel>
+  <history>
+    <range>0</range>
+    <mode>0</mode>
+  </history>
+  <backup>0</backup>
+  <mainForm>
+    <maximize>False</maximize>
+    <controlBox>False</controlBox>
+    <background>
+    </background>
+  </mainForm>
+</config>

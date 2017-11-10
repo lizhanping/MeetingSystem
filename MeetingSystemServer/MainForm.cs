@@ -164,7 +164,7 @@ namespace MeetingSystemServer
             MeetingDepartment.Items.Clear();
             MeetingCreater.Items.Clear();
             XmlDocument xmlDoc = new XmlDocument();
-            string cfgPath = Application.StartupPath + "//config.xml";
+            string cfgPath = Application.StartupPath + @"/config/config.xml";
             xmlDoc.Load(cfgPath);
             XmlNode rootNode = xmlDoc.SelectSingleNode("config");
 
@@ -205,14 +205,14 @@ namespace MeetingSystemServer
         /// </summary>
         private void readExtraConfig()
         {
-            if (!File.Exists(Application.StartupPath + "//extra.xml"))
+            if (!File.Exists(Application.StartupPath + @"/config/extra.xml"))
             {
                 return; //default
             }
             else
             {
                 XmlDocument xmlDoc = new XmlDocument();
-                xmlDoc.Load(Application.StartupPath + "//extra.xml");
+                xmlDoc.Load(Application.StartupPath + @"/config/extra.xml");
                 XmlNode rootNode = xmlDoc.SelectSingleNode("config");
                 foreach (XmlNode xn in rootNode.ChildNodes)
                 {
@@ -362,6 +362,15 @@ namespace MeetingSystemServer
                 return;   
         }
         /// <summary>
+        /// 打开帮助手册
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void helpBtn_Click(object sender, EventArgs e)
+        {
+            //todo
+        }
+        /// <summary>
         /// 提示信息
         /// </summary>
         /// <param name="sender"></param>
@@ -388,7 +397,15 @@ namespace MeetingSystemServer
         {
             myToolTip.SetToolTip(historyBtn, "历史记录");
         }
-
+        /// <summary>
+        /// 提示信息
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void helpBtn_MouseEnter(object sender, EventArgs e)
+        {
+            myToolTip.SetToolTip(helpBtn, "使用帮助");
+        }
         /// <summary>
         /// 解决卡顿问题
         /// </summary>
@@ -401,5 +418,6 @@ namespace MeetingSystemServer
                 return cp;
             }
         }
+
     }
 }

@@ -15,6 +15,7 @@ using System.Threading;
 using System.Data.OleDb;
 using System.Xml;
 using waitForm;
+using DataService;
 
 namespace MeetingSystemServer
 {
@@ -98,6 +99,34 @@ namespace MeetingSystemServer
             #region 开启自己对各终端的监听
             StartListenForClient();
             #endregion
+            #region 加载图片集合
+            loadImageList(localImageList, Application.StartupPath + @"\config\smallIcon.xml");
+            #endregion
+        }
+        /// <summary>
+        /// 加载图标集合
+        /// </summary>
+        private void loadImageList(ImageList imageList,string filePath)
+        {
+            string configFile = filePath;
+            if (!File.Exists(configFile))
+            {
+                return;//保持默认
+            }
+            //存在，就加载
+            imageList.Images.Clear();
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.Load(configFile);
+            XmlNode rootNode = xmlDoc.SelectSingleNode("config");
+            foreach (XmlNode xn in rootNode.ChildNodes)
+            {
+                string imagePath = Application.StartupPath + "\\" + xn.InnerText;
+                if (File.Exists(imagePath))
+                {
+                    Bitmap image = new Bitmap(imagePath);
+                    imageList.Images.Add(xn.Attributes["name"].Value,image);
+                }
+            }
         }
         /// <summary>
         /// 获取本机基本信息
@@ -289,7 +318,7 @@ namespace MeetingSystemServer
         /// <returns></returns>
         private object readValueFromConfigByNode(string node)
         {
-            string path = Application.StartupPath + "//config.xml";
+            string path = Application.StartupPath + @"\config\config.xml";
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.Load(path);
             return xmlDoc.SelectSingleNode("config").SelectSingleNode(node).InnerText;
@@ -325,10 +354,11 @@ namespace MeetingSystemServer
         {
             byte[] recv = new byte[DataService.DataService.Buff_Size];
             Socket myClientSocket = (Socket)clientSocket;
-            int fileSize = 0;
+            long fileSize = 0;
             string fileName = "";
             int hasReceBytes = 0;//已接收的数据字节
-            byte[] fileData = new byte[1];
+            byte[] fileData = new byte[0];
+            long realFileSize = 0L;
             while (true)
             {
                 try
@@ -348,8 +378,9 @@ namespace MeetingSystemServer
                         {
                             //接受数据,解析数据文件大小和文件名
                             fileSize = BitConverter.ToInt32(recv, DataService.DataService.HeadLength);//获取4节点文件大小
+                            realFileSize = fileSize;
                             fileData = new byte[fileSize];
-                            fileName = Encoding.Unicode.GetString(recv, DataService.DataService.HeadLength + 4, receiveNumber - DataService.DataService.HeadLength - 4);
+                            fileName = Encoding.Unicode.GetString(recv, DataService.DataService.HeadLength + 8, receiveNumber - DataService.DataService.HeadLength - 8);
                             object msg = "检测到客户端"+((IPEndPoint)myClientSocket.RemoteEndPoint).Address.ToString()+"回传文件数据：文件名为：" + fileName + "文件大小为：" + fileSize;
                             DataService.DataService.SendCommand(myClientSocket, DataService.DataService.recvFileHeadSuccess);//答复
                             Console.WriteLine(msg);
@@ -379,48 +410,73 @@ namespace MeetingSystemServer
                             Console.WriteLine("接收到新数据，当前数据量为:" + hasReceBytes + " byte");
                             if (hasReceBytes < fileSize)
                             {
-                                if (receiveNumber < DataService.DataService.Buff_Size)
-                                {
-                                    for (int i = hasReceBytes, j = 0; i < fileSize && j < receiveNumber; i++, j++)
-                                    {
-                                        fileData[i] = recv[j];
-                                    }
-                                }
-                                else
-                                {
-                                    recv.CopyTo(fileData, hasReceBytes);
-                                }
-                                hasReceBytes += receiveNumber;
+                                byte[] decodeData = new byte[receiveNumber];
+                                Array.Copy(recv, decodeData, receiveNumber);
+                                decodeData.CopyTo(fileData, hasReceBytes);
+                                hasReceBytes += decodeData.Length;
                             }
-                            if(hasReceBytes>=fileSize)
+                            //文件接收完毕
+                            if (hasReceBytes >= fileSize)
                             {
+                                //保存文件
                                 try
                                 {
-                                    //保存文件
-                                    Directory.CreateDirectory(GlobalInfo.localSpace + "\\" + GlobalInfo.remoteIPList[((IPEndPoint)myClientSocket.RemoteEndPoint).Address.ToString()]);
-                                    File.WriteAllBytes(GlobalInfo.localSpace + "\\" + GlobalInfo.remoteIPList[((IPEndPoint)myClientSocket.RemoteEndPoint).Address.ToString()] + "\\" + fileName, DataService.SecurityTransmit.Decoding(fileData));
-                                    //string text = DataService.SecurityTransmit.Decoding(fileData);
-                                    //File.WriteAllText(GlobalInfo.MeetingFold + "\\" + fileName, DataService.SecurityTransmit.Decoding(fileData));
-                                    if (File.Exists(GlobalInfo.localSpace + "\\" + GlobalInfo.remoteIPList[((IPEndPoint)myClientSocket.RemoteEndPoint).Address.ToString()] + "\\" + fileName))
+                                    //此处判断下是否存在加密的情况
+                                    if (GlobalInfo.encrypt)
                                     {
-                                        object msg = "创建文件" + fileName + "成功！";
-                                        Console.WriteLine(msg);
-                                        updateLogInfo(msg);
+                                        byte[] realFile = new byte[realFileSize];
+                                        int i = 0;
+                                        int times = (int)(fileSize / (DataService.DataService.Buff_Size + 16));
+                                        Console.WriteLine("times:" + times);
+                                        for (i = 0; i < times; i++)
+                                        {
+                                            Console.WriteLine("当前i:" + i);
+                                            byte[] encryData = new byte[DataService.DataService.Buff_Size + 16];
+                                            Array.Copy(fileData, encryData, encryData.Length);
+                                            Console.WriteLine("encryData length:" + encryData.Length);
+                                            byte[] test = SecurityTransmit.Decoding(encryData);
+                                            Console.WriteLine("test length:" + test.Length);
+                                            try
+                                            {
+                                                test.CopyTo(realFile, DataService.DataService.Buff_Size * i);
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                Console.WriteLine(ex.Message.ToString());
+                                            }
+
+                                        }
+                                        //处理剩下部分
+                                        SecurityTransmit.Decoding(fileData.Skip(i * (DataService.DataService.Buff_Size + 16)).ToArray()).CopyTo(realFile, DataService.DataService.Buff_Size * i);
+                                        File.WriteAllBytes(GlobalInfo.localSpace + "\\" + fileName, fileData);
                                     }
                                     else
                                     {
-                                        object msg = "创建文件" + fileName + "成功！";
-                                        Console.WriteLine(msg);
-                                        updateLogInfo(msg);
+                                        File.WriteAllBytes(GlobalInfo.localSpace + "\\" + fileName, fileData);
+                                    }
+
+                                    if (File.Exists(GlobalInfo.localSpace + "\\" + fileName))
+                                    {
+                                        Console.WriteLine("创建文件成功！");
+                                        //string fileCreateTime = File.GetCreationTime(GlobalInfo.localSpace + "\\" + fileName).ToString();
+                                        //string msg = GlobalInfo.localSpace + "\\" + fileName.Substring(1) + " " + fileCreateTime + " " + fileSize;
+                                        //string path = GlobalInfo.localSpace + "\\" + "raw.txt";
+                                        //DataService.LogManager.logInfo(path, msg);
+                                        //DataService.DataService.SendCommand(myClientSocket, DataService.DataService.recvAllFileSuccess);
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("创建文件失败！");
+                                       // DataService.DataService.SendCommand(myClientSocket, DataService.DataService.recvFileHeadFailed);
                                     }
                                 }
                                 catch (Exception ex)
                                 {
-                                    Console.WriteLine(ex.Message);
+                                    Console.WriteLine("此处捕获文件接收完毕时的异常情况:" + ex.Message);
                                 }
 
                             }
-                            
+
                         }
                     }
                     else
@@ -1225,8 +1281,8 @@ namespace MeetingSystemServer
                 tn.Text = text;
                 if (Directory.Exists(path)) //是否是目录
                 {
-                    tn.ImageIndex = 0;
-                    tn.SelectedImageIndex = 0;
+                    tn.ImageIndex = getIndexByFileExtention(".folder");
+                    tn.SelectedImageIndex = tn.ImageIndex;
                 }
                 else
                 {
@@ -1264,25 +1320,11 @@ namespace MeetingSystemServer
         /// <returns></returns>
         private int getIndexByFileExtention(string ext)
         {
-            int value = 9;
-            switch (ext)
+            if (localImageList.Images.Keys.Contains(ext))
             {
-                case ".rar":
-                case ".zip": value = 1; break;
-                case ".doc":
-                case ".dot":
-                case ".docx":value = 2;break;
-                case ".xls":
-                case ".xlsx":value = 3;break;
-                case ".ppt":
-                case ".pptx":value = 4;break;
-                case ".pdf":value = 5;break;
-                case ".png":value = 6;break;
-                case ".jpg":value = 7;break;
-                case ".txt":value = 8;break;
-                default:value = 9;break;
+                return localImageList.Images.IndexOfKey(ext);
             }
-            return value;
+            return localImageList.Images.IndexOfKey(".unkown");
         }
         /// <summary>
         /// 双击节点
