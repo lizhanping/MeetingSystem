@@ -7,6 +7,8 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.Xml;
+using System.IO;
 
 namespace MeetingSystemServer
 {
@@ -154,8 +156,8 @@ namespace MeetingSystemServer
                 {
                     list = list + "topic like '%" + str + "%'" + " or ";
                 }
-                list = "(" + list.Substring(0,list.Length-3) + ")";
-                topicStr = " and "+list;
+                list = "(" + list.Substring(0, list.Length - 3) + ")";
+                topicStr = " and " + list;
             }
             if (radioButton6.Checked)
             {
@@ -190,24 +192,49 @@ namespace MeetingSystemServer
                 createrStr = " and " + list;
             }
 
-            string sql = "select topic as 会议主题,department as 办会部门,creater as 办会人, createtime as 会议开始时间, endtime as 会议结束时间 from meetingtable where 1=1 "+ createTimeStr + topicStr+departStr+createrStr;
+            string sql = "select topic as 会议主题,department as 办会部门,creater as 办会人, createtime as 会议开始时间, endtime as 会议结束时间,uuid as 标识 from meetingtable where 1=1 " + createTimeStr + topicStr + departStr + createrStr;
             OleDbCommand ocmd = new OleDbCommand(sql, oc);
             if (createTimeFlag)
             {
                 ocmd.Parameters.Add("time1", OleDbType.Date);
-                ocmd.Parameters.Add("time2",OleDbType.Date);
+                ocmd.Parameters.Add("time2", OleDbType.Date);
                 ocmd.Parameters["time1"].Value = dateTimePicker1.Value;
                 ocmd.Parameters["time2"].Value = dateTimePicker2.Value;
             }
             OleDbDataAdapter oda = new OleDbDataAdapter(ocmd);
-            DataTable dt = new DataTable();
+            DataTable dt = new DataTable("meetinghistory");
             oda.Fill(dt);
             if (dt.Rows.Count == 0)
             {
                 MessageBox.Show("未查到有效数据！");
                 return;
             }
-            GlobalInfo.DataTableToExcel(dt, "所有会议记录");
+            SaveFileDialog sfd = new SaveFileDialog();
+            sfd.Filter = readValueFromConfigByNode("backup").ToString() == "0" ? "(*.xml)|*.xml" : "(*.xls)|*.xls";
+            if (sfd.ShowDialog() == DialogResult.OK)
+            {
+                if (File.Exists(sfd.FileName))
+                {
+                    DialogResult dr = MessageBox.Show("文件已存在，是否覆盖？", "提示！", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    if (dr == DialogResult.Yes)
+                    {
+                        File.Delete(sfd.FileName);//先删除
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+                if (readValueFromConfigByNode("backup").ToString() == "0")
+                {
+                    GlobalInfo.DataTableToXml(dt, sfd.FileName);
+                }
+                else
+                {
+                    GlobalInfo.DataTableToExcel(dt, sfd.FileName);
+                }
+                MessageBox.Show("导出完毕！", "提示！");
+            }
         }
         /// <summary>
         /// 取消
@@ -217,6 +244,27 @@ namespace MeetingSystemServer
         private void cancleBtn_Click(object sender, EventArgs e)
         {
             this.Close();
+        }
+        /// <summary>
+        /// 读取配置文件节点的值
+        /// </summary>
+        /// <param name="node">节点名称</param>
+        /// <returns></returns>
+        private object readValueFromConfigByNode(string node)
+        {
+            return readNodeFromConfigByName(node).InnerText;
+        }
+        /// <summary>
+        /// 通过节点名获取节点
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
+        private XmlNode readNodeFromConfigByName(string node)
+        {
+            string path = Application.StartupPath + @"\config\config.xml";
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.Load(path);
+            return xmlDoc.SelectSingleNode("config").SelectSingleNode(node);
         }
     }
 }

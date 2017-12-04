@@ -42,8 +42,8 @@
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this.historyBtn = new System.Windows.Forms.Button();
-            this.settingBtn = new System.Windows.Forms.Button();
             this.exitBtn = new System.Windows.Forms.Button();
+            this.settingBtn = new System.Windows.Forms.Button();
             this.capacity = new System.Windows.Forms.Label();
             this.helpBtn = new System.Windows.Forms.Button();
             this.startMeeting = new System.Windows.Forms.Button();
@@ -235,6 +235,20 @@
             this.historyBtn.Click += new System.EventHandler(this.historyBtn_Click);
             this.historyBtn.MouseEnter += new System.EventHandler(this.historyBtn_MouseEnter);
             // 
+            // exitBtn
+            // 
+            this.exitBtn.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.exitBtn.FlatAppearance.BorderSize = 0;
+            this.exitBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.exitBtn.Image = global::MeetingSystemServer.Properties.Resources.exitSystem;
+            this.exitBtn.Location = new System.Drawing.Point(243, 3);
+            this.exitBtn.Name = "exitBtn";
+            this.exitBtn.Size = new System.Drawing.Size(74, 71);
+            this.exitBtn.TabIndex = 11;
+            this.exitBtn.UseVisualStyleBackColor = true;
+            this.exitBtn.Click += new System.EventHandler(this.exitBtn_Click);
+            this.exitBtn.MouseEnter += new System.EventHandler(this.exitBtn_MouseEnter);
+            // 
             // settingBtn
             // 
             this.settingBtn.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -248,20 +262,6 @@
             this.settingBtn.UseVisualStyleBackColor = true;
             this.settingBtn.Click += new System.EventHandler(this.settingBtn_Click);
             this.settingBtn.MouseEnter += new System.EventHandler(this.settingBtn_MouseEnter);
-            // 
-            // exitBtn
-            // 
-            this.exitBtn.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.exitBtn.FlatAppearance.BorderSize = 0;
-            this.exitBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.exitBtn.Image = global::MeetingSystemServer.Properties.Resources.exitSystem;
-            this.exitBtn.Location = new System.Drawing.Point(243, 3);
-            this.exitBtn.Name = "exitBtn";
-            this.exitBtn.Size = new System.Drawing.Size(74, 71);
-            this.exitBtn.TabIndex = 10;
-            this.exitBtn.UseVisualStyleBackColor = true;
-            this.exitBtn.Click += new System.EventHandler(this.exitBtn_Click);
-            this.exitBtn.MouseEnter += new System.EventHandler(this.exitBtn_MouseEnter);
             // 
             // capacity
             // 
@@ -284,7 +284,7 @@
             this.helpBtn.Location = new System.Drawing.Point(163, 3);
             this.helpBtn.Name = "helpBtn";
             this.helpBtn.Size = new System.Drawing.Size(74, 71);
-            this.helpBtn.TabIndex = 11;
+            this.helpBtn.TabIndex = 10;
             this.helpBtn.UseVisualStyleBackColor = true;
             this.helpBtn.Click += new System.EventHandler(this.helpBtn_Click);
             this.helpBtn.MouseEnter += new System.EventHandler(this.helpBtn_MouseEnter);

@@ -17,7 +17,6 @@ namespace waitForm
         public waitForm()
         {
             InitializeComponent();
-            Console.WriteLine("test1111111111111");
         }
 
         /// <summary>
@@ -62,7 +61,6 @@ namespace waitForm
                 monitThread.Start(para);
             else
                 monitThread.Start();
-            Console.WriteLine("test22222222222");
             bool flag = true;
             while (flag)
             {
@@ -71,9 +69,7 @@ namespace waitForm
                     flag = false;
                 }
             }
-            Thread.Sleep(1000);
-            Console.WriteLine("test3333333333");
-            //Application.Exit();
+            Thread.Sleep(500);
             waitFormClose();
         }
         /// <summary>

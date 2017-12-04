@@ -6,6 +6,7 @@ using System.Data;
 using System.Data.OleDb;
 using System.Net.Sockets;
 using MSExcel = Microsoft.Office.Interop.Excel;
+using System.IO;
 
 namespace MeetingSystemServer
 {
@@ -81,8 +82,7 @@ namespace MeetingSystemServer
             }
 
             //创建excel对象
-            MSExcel.Application excel = new MSExcel.Application();
-
+            MSExcel._Application excel = new MSExcel.Application();
             MSExcel.Workbook workbook = excel.Workbooks.Add(MSExcel.XlWBATemplate.xlWBATWorksheet);
             MSExcel.Worksheet worksheet = (MSExcel.Worksheet)workbook.Worksheets[1];
             excel.Visible = true;
@@ -108,13 +108,49 @@ namespace MeetingSystemServer
             //保存
             try
             {
-                excel.SaveWorkspace(fileName);
+                workbook.SaveAs(fileName);
             }
             catch
             {
                 return;
             }
 
+        }
+        /// <summary>
+        /// datatable输出xml
+        /// </summary>
+        /// <param name="dt"></param>
+        /// <param name="fileName"></param>
+        public static void DataTableToXml(DataTable dt, string fileName)
+        {
+            FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+            dt.WriteXml(fs);
+            fs.Flush();
+            fs.Close();
+        }
+        /// <summary>
+        /// 读取xls文件至datatable
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static DataTable xlsToDataTable(string fileName)
+        {
+            string strConn;
+            strConn = "Provider=Microsoft.ACE.OLEDB.12.0;" +
+                "Data Source=" + fileName + ";" +
+                "Extended Properties=Excel 12.0;";
+            OleDbConnection conn = new OleDbConnection(strConn);
+            OleDbDataAdapter myCommand = new OleDbDataAdapter("SELECT * FROM [Sheet1$]", strConn);
+            DataTable dt = new DataTable();
+            try
+            {
+                myCommand.Fill(dt);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            return dt;
         }
     }
 }

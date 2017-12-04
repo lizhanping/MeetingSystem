@@ -34,7 +34,8 @@ namespace MeetingSystemServer
             baseFold = Application.StartupPath + "\\MeetingFold";
             loadImageList(smallImageList, Application.StartupPath + @"\config\smallIcon.xml");
             loadImageList(largeImageList, Application.StartupPath + @"\config\largeIcon.xml");
-            LoadHistory();
+            displayRange.SelectedIndex = Int32.Parse(readNodeFromConfigByName("history").SelectSingleNode("range").InnerText);
+            displayMode.SelectedIndex = Int32.Parse(readNodeFromConfigByName("history").SelectSingleNode("mode").InnerText);
         }
         /// <summary>
         /// 加载图标集合
@@ -66,9 +67,31 @@ namespace MeetingSystemServer
         /// </summary>
         private void LoadHistory()
         {
+            List<TreeNode> folderList = new List<TreeNode>();
+            historyTree.Nodes.Clear();
             OleDbConnection oc = GlobalInfo.GlobalConnection;
             oc.Open();
-            string sql = "select id,createtime,topic from meetingtable ";
+            DateTime start=DateTime.Now.Date; //默认一个月
+            //DateTime end=DateTime.Now.Date;
+            string range = "";
+            string mode = "";
+            bool sizeFlag = false;
+            switch (displayRange.SelectedIndex)
+            {
+                case 0:start = start.AddMonths(-1); range = " where createtime>=#"+start+"#"; break; //最近一个月
+                case 1:start =start.AddMonths(-3); range = " where createtime>=#" + start + "#"; break; //最近三个月
+                case 2:start = start.AddMonths(-6); range = " where createtime>=#" + start + "#"; break;//最近6个月
+                case 3:start = start.AddYears(-1); range = " where createtime>=#" + start + "#"; break;//最近一年
+                case 4:break;//全部
+            }
+            switch (displayMode.SelectedIndex)
+            {
+                case 0:mode = " order by createtime asc"; break;
+                case 1:mode = " order by createtime desc"; break;
+                case 2:sizeFlag = true; break;
+                case 3:sizeFlag = true; break;
+            }
+            string sql = "select id,createtime,topic from meetingtable "+range+mode;
             OleDbCommand ocmd = new OleDbCommand(sql, oc);
             try
             {
@@ -92,7 +115,25 @@ namespace MeetingSystemServer
                         tn.SelectedImageIndex = 0;
                     }
                     tn.Tag = odr[0];
-                    historyTree.Nodes.Add(tn);
+                    if (!sizeFlag)
+                        historyTree.Nodes.Add(tn);
+                    else
+                    {
+                        //先将节点添加进一个List中
+                        folderList.Add(tn);
+                    }
+                }
+                if (sizeFlag)
+                {
+                    folderList.Sort(new myCompare());
+                    if(displayMode.SelectedIndex==3)//大小转变
+                         folderList.Reverse();
+                    //排完顺后再进行添加
+                    foreach (TreeNode tn in folderList)
+                    {
+                        historyTree.Nodes.Add(tn);
+                        
+                    }
                 }
             }
             catch (Exception ex)
@@ -105,7 +146,7 @@ namespace MeetingSystemServer
                 oc.Close();
             }
 
-        }
+        }      
         /// <summary>
         /// 读取节点信息
         /// </summary>
@@ -306,6 +347,11 @@ namespace MeetingSystemServer
         /// <param name="e"></param>
         private void clearToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (historyTree.SelectedNode == null)
+            {
+                MessageBox.Show("请先选择想要清除的会议节点!","提示！");
+                return;
+            }
             if (MessageBox.Show("确定要清除本次会议空间吗？（清除后不可恢复）","提示！",MessageBoxButtons.YesNo,MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 Thread deleteThread = new Thread(new ParameterizedThreadStart(processDelete));
@@ -338,17 +384,44 @@ namespace MeetingSystemServer
         {
             OleDbConnection oc = GlobalInfo.GlobalConnection;
             oc.Open();
-            string sql = "select topic as 会议主题,department as 办会部门,creater as 办会人, createtime as 会议开始时间, endtime as 会议结束时间 from meetingtable";
+            string sql = "select topic as 会议主题,department as 办会部门,creater as 办会人, createtime as 会议开始时间, endtime as 会议结束时间,uuid as 标识 from meetingtable";
             OleDbCommand ocmd = new OleDbCommand(sql, oc);
             OleDbDataAdapter oda = new OleDbDataAdapter(ocmd);
-            DataTable dt = new DataTable();
+            DataTable dt = new DataTable("meetinghistory");
             oda.Fill(dt);
             if (dt.Rows.Count == 0)
             {
                 MessageBox.Show("未查到有效数据！");
                 return;
             }
-            GlobalInfo.DataTableToExcel(dt, "所有会议记录");
+
+            SaveFileDialog sfd = new SaveFileDialog();
+            sfd.Filter = readValueFromConfigByNode("backup").ToString() == "0"?"(*.xml)|*.xml":"(*.xls)|*.xls";
+            if(sfd.ShowDialog()==DialogResult.OK)
+            {
+                if (File.Exists(sfd.FileName))
+                {
+                    DialogResult dr = MessageBox.Show("文件已存在，是否覆盖？", "提示！", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    if (dr == DialogResult.Yes)
+                    {
+                        File.Delete(sfd.FileName);//先删除
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+            if (readValueFromConfigByNode("backup").ToString() == "0")
+            {
+                GlobalInfo.DataTableToXml(dt, sfd.FileName);
+            }
+            else
+            {
+                GlobalInfo.DataTableToExcel(dt, sfd.FileName);
+            }
+            MessageBox.Show("导出完毕！", "提示！");
+        }
+
         }
         /// <summary>
         /// 选择导出
@@ -367,7 +440,52 @@ namespace MeetingSystemServer
         /// <param name="e"></param>
         private void importToolStripMenuItem_Click(object sender, EventArgs e)
         {
-
+            historyImportInterface hii;            
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "(*.xml)|*.xml|(*.xls)|*.xls";
+            ofd.Multiselect = false;
+            ofd.Title = "选择导入的文件";
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {              
+                string fileName = ofd.FileName;
+                //判断是那种类型的文件
+                switch (Path.GetExtension(fileName))
+                {
+                    case ".xls":hii = new xlsImport(); executeImport(hii,fileName);LoadHistory(); break;
+                    case ".xml":hii = new xmlImport(); executeImport(hii,fileName);LoadHistory(); break;
+                }
+            }
+            else
+                return;
+        }
+        /// <summary>
+        /// 执行导入
+        /// </summary>
+        /// <param name="hii">导入方式</param>
+        /// <param name="fileName">导入文件名</param>
+        private void executeImport(historyImportInterface hii,string fileName)
+        {
+            int ret = hii.import(fileName);
+            if (ret == 0)
+            {
+                MessageBox.Show("导入成功！");
+                return;
+            }
+            if (ret == -1)
+            {
+                MessageBox.Show("导入文件不存在！");
+                return;
+            }
+            if (ret == -2)
+            {
+                MessageBox.Show("导入文件格式不正确！");
+                return;
+            }
+            if (ret == -3)
+            {
+                MessageBox.Show("导入失败！");
+                return;
+            }
         }
         /// <summary>
         /// 读取配置文件节点的值
@@ -376,10 +494,37 @@ namespace MeetingSystemServer
         /// <returns></returns>
         private object readValueFromConfigByNode(string node)
         {
+            return readNodeFromConfigByName(node).InnerText;
+        }
+        /// <summary>
+        /// 通过节点名获取节点
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
+        private XmlNode readNodeFromConfigByName(string node)
+        {
             string path = Application.StartupPath + @"\config\config.xml";
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.Load(path);
-            return xmlDoc.SelectSingleNode("config").SelectSingleNode(node).InnerText;
+            return xmlDoc.SelectSingleNode("config").SelectSingleNode(node);
+        }
+        /// <summary>
+        /// 重新根据设置条件加载
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void displayRange_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            LoadHistory();
+        }
+        /// <summary>
+        /// 重新根据设置条件加载
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void displayMode_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            LoadHistory();
         }
     }
 }

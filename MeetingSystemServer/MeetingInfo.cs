@@ -35,6 +35,9 @@ namespace MeetingSystemServer
             public string cmd;
             public List<string> dataList;
         }
+        /// <summary>
+        /// 文件和IP
+        /// </summary>
         struct fileAndIp
         {
             public TreeNode fileName;
@@ -44,7 +47,10 @@ namespace MeetingSystemServer
         //ip,fileName
         private Dictionary<string, List<string>> hasSendFile = new Dictionary<string, List<string>>();//存放各IP已发送的文件列表，只存放文件
         private Dictionary<string, List<string>> sendFailFile = new Dictionary<string, List<string>>();//存放未发送成功的文件列表
-
+        private int sendCnt = 0;//发送文件计数
+        /// <summary>
+        /// 构造
+        /// </summary>
         public MeetingInfo()
         {
             InitializeComponent();
@@ -191,8 +197,8 @@ namespace MeetingSystemServer
             byte[] recv = new byte[1024];
             //byte[] send = new byte[1024];
             Socket clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            Console.WriteLine("发送区缓冲大小为:"+clientSocket.SendBufferSize);
-            Console.WriteLine("接受区缓冲大小为："+clientSocket.ReceiveBufferSize);
+           // Console.WriteLine("发送区缓冲大小为:"+clientSocket.SendBufferSize);
+           // Console.WriteLine("接受区缓冲大小为："+clientSocket.ReceiveBufferSize);
             try
             {
                 clientSocket.Connect((IPAddress)ip, GlobalInfo.Port);//连接成功，获取数据，添加至已连接列表                
@@ -338,7 +344,7 @@ namespace MeetingSystemServer
                     updateLogInfo(msg);
                     //Directory.CreateDirectory(GlobalInfo.localSpace + "\\" + GlobalInfo.remoteIPList[((IPEndPoint)clientSocket.RemoteEndPoint).Address.ToString()]);
                     Thread receiveThread = new Thread(new ParameterizedThreadStart(ReceiveMessage));
-                    receiveThread.Start(clientSocket);
+                    receiveThread.Start(clientSocket);  
                 }
             }
             catch (Exception ex)
@@ -448,22 +454,20 @@ namespace MeetingSystemServer
                                         }
                                         //处理剩下部分
                                         SecurityTransmit.Decoding(fileData.Skip(i * (DataService.DataService.Buff_Size + 16)).ToArray()).CopyTo(realFile, DataService.DataService.Buff_Size * i);
-                                        File.WriteAllBytes(GlobalInfo.localSpace + "\\" + fileName, fileData);
+                                        //保存文件
+                                        Directory.CreateDirectory(GlobalInfo.localSpace + "\\" + GlobalInfo.remoteIPList[((IPEndPoint)myClientSocket.RemoteEndPoint).Address.ToString()]);
+                                        File.WriteAllBytes(GlobalInfo.localSpace + "\\" + GlobalInfo.remoteIPList[((IPEndPoint)myClientSocket.RemoteEndPoint).Address.ToString()] + "\\" + fileName, fileData);
                                     }
                                     else
                                     {
-                                        File.WriteAllBytes(GlobalInfo.localSpace + "\\" + fileName, fileData);
+                                        Directory.CreateDirectory(GlobalInfo.localSpace + "\\" + GlobalInfo.remoteIPList[((IPEndPoint)myClientSocket.RemoteEndPoint).Address.ToString()]);
+                                        File.WriteAllBytes(GlobalInfo.localSpace + "\\" + GlobalInfo.remoteIPList[((IPEndPoint)myClientSocket.RemoteEndPoint).Address.ToString()] + "\\" + fileName, fileData);
                                     }
 
-                                    if (File.Exists(GlobalInfo.localSpace + "\\" + fileName))
+                                    if (File.Exists(GlobalInfo.localSpace + "\\" + GlobalInfo.remoteIPList[((IPEndPoint)myClientSocket.RemoteEndPoint).Address.ToString()] + "\\" + fileName))
                                     {
                                         Console.WriteLine("创建文件成功！");
-                                        //string fileCreateTime = File.GetCreationTime(GlobalInfo.localSpace + "\\" + fileName).ToString();
-                                        //string msg = GlobalInfo.localSpace + "\\" + fileName.Substring(1) + " " + fileCreateTime + " " + fileSize;
-                                        //string path = GlobalInfo.localSpace + "\\" + "raw.txt";
-                                        //DataService.LogManager.logInfo(path, msg);
-                                        //DataService.DataService.SendCommand(myClientSocket, DataService.DataService.recvAllFileSuccess);
-                                    }
+                                     }
                                     else
                                     {
                                         Console.WriteLine("创建文件失败！");
@@ -557,6 +561,8 @@ namespace MeetingSystemServer
         /// <param name="e"></param>
         private void clientDeleteBtn_Click(object sender, EventArgs e)
         {
+            if (MessageBox.Show("确定要删除远程客户端？","提示！",MessageBoxButtons.YesNo,MessageBoxIcon.Question) == DialogResult.No)
+                return;
             foreach (TreeNode tn in selectUser)
             {
                 GlobalInfo.remoteIPList.Remove(tn.Name);
@@ -598,39 +604,19 @@ namespace MeetingSystemServer
             if (ofd.ShowDialog() == DialogResult.OK)
             {
                 string[] pathList = ofd.FileNames;
+                uploadInterface ui = new uploadFile();
+                ui.setDes(GlobalInfo.localSpace);
                 foreach (string path in pathList)
                 {
-                    try
-                    {
-                        Thread thread = new Thread(new ParameterizedThreadStart(uploadFile));
-                        waitForm.waitForm wf = new waitForm.waitForm();
-                        wf.setText("正在上传文件"+Path.GetFileName(path)+"，请稍后...");
-                        wf.setMonit(thread, path);
-                        wf.ShowDialog();
-                        //thread.Start(path);                     
-                    }
-                    catch(Exception ex)
-                    {
-                        MessageBox.Show(ex.Message+"\n"+"文件："+Path.GetFileName(path)+"上传失败！","警告！",MessageBoxButtons.OK,MessageBoxIcon.Warning);
-                    }
-                }
+                    ui.setSrc(path);
+                    Thread upLoadThread = new Thread(new ParameterizedThreadStart(processUpload));
+                    waitForm.waitForm wf = new waitForm.waitForm();
+                    wf.setText("正在上传文件"+ui.getFileName()+"，请稍后...");
+                    wf.setMonit(upLoadThread, ui);
+                    wf.ShowDialog();
+                }              
             }
         }
-        /// <summary>
-        /// 上传文件
-        /// </summary>
-        /// <param name="path"></param>
-        private void uploadFile(object path)
-        {
-            string filePath = (string)path;
-            FileInfo fi = new FileInfo(filePath);
-            fi.CopyTo(Path.Combine(GlobalInfo.localSpace, Path.GetFileName(filePath)), true);
-            object msg = "文件" + Path.GetFileName(filePath) + "上传成功！";
-            updateLogInfo(msg);
-            updateStatus(msg);
-            Console.WriteLine(msg.ToString());
-        }
-        /// <summary>
         /// 删除本地会议空间选择的文件
         /// </summary>
         /// <param name="sender"></param>
@@ -643,28 +629,58 @@ namespace MeetingSystemServer
                 MessageBox.Show("请先选择文件！");
                 return;
             }
+            Thread deleteThread = new Thread(new ParameterizedThreadStart(processDelete));
+            deleteThread.Start(localSelectedFile);                  
+        }
+        /// <summary>
+        /// 处理删除操作
+        /// </summary>
+        /// <param name="obj"></param>
+        private void processDelete(object obj)
+        {
+            List<TreeNode> list = (List<TreeNode>)obj;
             List<TreeNode> delList = new List<TreeNode>();
-            foreach (TreeNode tn in localSelectedFile)
+            object msg = "";
+            foreach (TreeNode tn in list)
             {
-                if (Directory.Exists(tn.Name))//目录
+                if (tn.Tag.ToString()=="0")//目录
                 {
                     DirectoryInfo di = new DirectoryInfo(tn.Name);
-                    di.Delete(true);
-                    delList.Add(tn);
+                    try
+                    {
+                        di.Delete(true);
+                        msg = "文件夹" + Path.GetFileName(tn.Name) + "删除成功！";
+                    }
+                    catch
+                    {
+                        msg = "文件夹" + Path.GetFileName(tn.Name) + "删除失败！";
+
+                    }
                 }
-                else if(File.Exists(tn.Name))//文件是单独存在的情况
+                else
                 {
                     FileInfo fi = new FileInfo(tn.Name);
-                    fi.Delete();
-                    delList.Add(tn);
+                    if (fi.Exists)
+                    {
+                        try
+                        {
+                            fi.Delete();
+                            msg = "文件" + Path.GetFileName(tn.Name) + "删除成功！";
+                        }
+                        catch
+                        {
+                            msg = "文件" + Path.GetFileName(tn.Name) + "删除失败！";
+                        }
+                    }
+                    else
+                    {
+                        msg = "文件" + Path.GetFileName(tn.Name) + "删除成功！";
+                    }
                 }
+                updateStatus(msg);
+                updateLogInfo(msg);
             }
-            foreach (TreeNode tn in delList)
-            {
-                localSelectedFile.Remove(tn);
-            }
-            
-                
+            localSelectedFile.Clear();//clear
         }
         /// <summary>
         /// 获取某路径下所有文件个数
@@ -707,29 +723,15 @@ namespace MeetingSystemServer
                 MessageBox.Show("请先选择要分发的文件！");
                 return;
             }
-            object msg = "正在统计待发送文件个数...";
-            updateStatus(msg);
-            updateLogInfo(msg);
-            fileCount = 0;
-            fileSendDic.Clear();
-            foreach (TreeNode tn in localSelectedFile)
-            {
-                if (Directory.Exists(tn.Name))
-                {
-                    fileCount += getFilesCount(tn.Name);
-                }
-                else
-                    fileCount++;
-            }
-            msg="共"+fileCount+"个文件待发送...";          //当存在多个客户端时，文件的发送可能会乱，需要重新考虑下。
-            updateLogInfo(msg);
-            updateStatus(msg);
+            Thread countThread = new Thread(new ParameterizedThreadStart(processCount));
+            countThread.Start(localSelectedFile);
             //初始化
+            fileSendDic.Clear();
             foreach (TreeNode tn in selectUser)
             {
                 fileSendDic.Add(tn.Name, 0);
             }
-
+            sendCnt = 0;
             foreach (TreeNode tnFile in localSelectedFile)
             {
                 foreach (TreeNode tnUser in selectUser)
@@ -737,16 +739,36 @@ namespace MeetingSystemServer
                     fileAndIp fi = new fileAndIp();
                     fi.fileName = tnFile;
                     fi.ip = IPAddress.Parse(tnUser.Name);                    
-                    Thread thread = new Thread(new ParameterizedThreadStart(SendFileToClient));
+                    Thread thread = new Thread(new ParameterizedThreadStart(sendFileToClient));
                     thread.Start(fi);
                 }
             }
         }
         /// <summary>
+        /// 处理文件统计进程
+        /// </summary>
+        /// <param name="obj"></param>
+        private void processCount(object obj)
+        {
+            List<TreeNode> list = (List<TreeNode>)obj;
+            object msg = "正在统计待发送文件个数...";
+            updateStatus(msg);
+            updateLogInfo(msg);
+            fileCount = 0;
+            foreach (TreeNode tn in list)
+            {
+                if (tn.Tag.ToString() == "1")
+                    fileCount++;
+            }
+            msg = "共" + fileCount + "个文件待发送...";          //当存在多个客户端时，文件的发送可能会乱，需要重新考虑下。
+            updateLogInfo(msg);
+            updateStatus(msg);
+        }
+        /// <summary>
         /// 将指定文件发送到某IP
         /// </summary>
-        /// <param name="fileAndIp"></param>
-        private void SendFileToClient(object fi)
+        /// <param name="fi"></param>
+        private void sendFileToClient(object fi)
         {
             fileAndIp fai = (fileAndIp)fi;
             TreeNode fileName = fai.fileName;
@@ -755,7 +777,7 @@ namespace MeetingSystemServer
             try
             {
                 clientSocket.Connect((IPAddress)ip, GlobalInfo.Port);
-                SendSelectFileByFileName(clientSocket, fileName);
+                sendSelectFileByFileName(clientSocket, fileName);
             }
             catch (Exception ex)
             {
@@ -766,39 +788,39 @@ namespace MeetingSystemServer
                 clientSocket.Close();
             }
         }
+
         /// <summary>
         /// 发送选中的文件
         /// </summary>
-        /// <param name="fileName"></param>
-        private void SendSelectFileByFileName(Socket clientSocket,TreeNode x)
+        /// <param name="clientSocket">选择的客户端</param>
+        /// <param name="x">文件</param>
+        private void sendSelectFileByFileName(Socket clientSocket,TreeNode x)
         {
+            string ip = ((IPEndPoint)clientSocket.RemoteEndPoint).Address.ToString();
             string DirName = DataService.DataService.getDirNameByFullPath(GlobalInfo.localSpace,x.Name);//先获取中间部分
-            if (Directory.Exists(x.Name)) //文件夹
+            if (x.Tag.ToString()=="0") //文件夹
             {
-                CreateFolder(clientSocket, DirName + "\\" + x.Text);
-                foreach (TreeNode tn in x.Nodes)
-                {
-                    SendSelectFileByFileName(clientSocket, tn);
-                }
+                createFolder(clientSocket, DirName + "\\" + x.Text);
             }
             else
             {
+                sendCnt++;
                 //文件：先建文件夹，再传数据
                 if (DirName != "") //不为空，则创建，为空，说明是在根目录，不用新建了
-                    CreateFolder(clientSocket, DirName);
-                object msg = "正在向客户端 "+GlobalInfo.remoteIPList[((IPEndPoint)clientSocket.RemoteEndPoint).Address.ToString()]+"发送文件："+x.Name+"（当前发送第"+(fileSendDic[((IPEndPoint)clientSocket.RemoteEndPoint).Address.ToString()]+1)+ "个，共"+fileCount+"个）";
+                    createFolder(clientSocket, DirName);
+                object msg = "正在向客户端 "+GlobalInfo.remoteIPList[ip] +"发送文件："+x.Text+"（当前发送第"+sendCnt+ "个，共"+fileCount+"个）";
+                Console.WriteLine(fileSendDic.Count);
                 updateStatus(msg);
                 sendFileData(clientSocket, x.Name);
                 //发送完毕+1
-                fileSendDic[((IPEndPoint)clientSocket.RemoteEndPoint).Address.ToString()] = fileSendDic[((IPEndPoint)clientSocket.RemoteEndPoint).Address.ToString()] + 1;
+                fileSendDic[ip] = fileSendDic[ip] + 1;
                 //所有发送完成
-                if(fileSendDic[((IPEndPoint)clientSocket.RemoteEndPoint).Address.ToString()]==fileCount)
+                if(fileSendDic[ip] ==fileCount)
                 {
                     msg = "向客户端："+ GlobalInfo.remoteIPList[((IPEndPoint)clientSocket.RemoteEndPoint).Address.ToString()] + " 文件发送完毕！";
                     updateStatus(msg);
                     updateLogInfo(msg);
                 }
-
             }
         }
         /// <summary>
@@ -818,49 +840,30 @@ namespace MeetingSystemServer
         /// <summary>
         /// 发送文件数据
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="connectSocket">建立连接socket</param>
+        /// <param name="fileName">文件名</param>
         private void sendFileData(Socket connectSocket,string fileName)
         {
             string ip = ((IPEndPoint)connectSocket.RemoteEndPoint).Address.ToString();
             object msg = "向客户端：" + GlobalInfo.remoteIPList[ip] + "(" + ip + ")" + " 发送文件：" + Path.GetFileName(fileName) + "...";
             Console.WriteLine(msg.ToString());
             updateLogInfo(msg);
+            updateStatus(msg);
             string basePath = GlobalInfo.localSpace;
             string transFileName = fileName;
             //判断是否需要进行水印处理
             if (GlobalInfo.waterMark)//兼容水印
             {
-                try
-                {
-                    msg = "正在处理水印...";
-                    updateLogInfo(msg);
-                    //现将该文件copy至临时目录，然后进行水印处理，同时更新basepath、transfilename
-                    string destFileName = Path.GetTempPath() + Path.GetFileName(fileName);
-                    if (File.Exists(destFileName))
-                    {
-                        File.Delete(destFileName);
-                    }
-                    File.Copy(fileName, destFileName);
-                    File.Move(destFileName, destFileName);
-                    //先加密处理
-
-                    basePath = Path.GetTempPath().Substring(0, Path.GetTempPath().Length - 1);
-                    transFileName = destFileName;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
-
+                DataService.DataService.deleteMark(fileName, out basePath, out transFileName);
             }
-            
+            //发送
             int rst=DataService.DataService.SendFile(connectSocket, basePath, transFileName,readValueFromConfigByNode("encrypt").ToString()=="True");
             if (rst == 0)
             {
                 msg = "向客户端："+GlobalInfo.remoteIPList[ip]+"("+ip+")"+" 发送文件：" + Path.GetFileName(fileName) + " 成功！";
                 Console.WriteLine(msg.ToString());
                 updateLogInfo(msg);
-
+                updateStatus(msg);
                 //判断关键字是否在字典中，不存在，则添加
                 if (hasSendFile.ContainsKey(ip))
                 {
@@ -887,8 +890,7 @@ namespace MeetingSystemServer
                     }
                     sendFailFile[ip] = failList;
                 }
-            }
-                
+            }   
             else
             {
                 if (sendFailFile.ContainsKey(ip))
@@ -919,14 +921,13 @@ namespace MeetingSystemServer
                 msg = "向客户端：" + GlobalInfo.remoteIPList[ip] + "(" + ip + ")" + " 发送文件：" + Path.GetFileName(fileName) + " 失败！";
                 Console.WriteLine(msg.ToString());
                 updateLogInfo(msg);
+                updateStatus(msg);
             }
         }
         /// <summary>
         /// 通过IP发送命令
         /// </summary>
-        /// <param name="ip"></param>
-        /// <param name="cmd">命令字</param>
-        /// <param name="data">指令集合</param>
+        /// <param name="obj">命令结构体</param>
         private void sendCommandByIp(object obj)
         {
             cmdObj tmp = (cmdObj)obj;
@@ -974,7 +975,7 @@ namespace MeetingSystemServer
         /// </summary>
         /// <param name="connectSocket"></param>
         /// <param name="foldName"></param>
-        private void CreateFolder(Socket connectSocket, string foldName)
+        private void createFolder(Socket connectSocket, string foldName)
         {
             byte[] recv = new byte[1024];
             DataService.DataService.SendCommand(connectSocket, DataService.DataService.createFolder, foldName);
@@ -1023,9 +1024,7 @@ namespace MeetingSystemServer
             wf.ShowDialog();
             //并将选中的发送列表清除
             localSelectedFile.Clear();
-            object msg = "会议空间已安全清除！";
-            updateStatus(msg);
-            updateLogInfo(msg);
+
                  
         }
         /// <summary>
@@ -1034,6 +1033,9 @@ namespace MeetingSystemServer
         private void deleteSpace()
         {
             DataService.SecurityDelete.DoSecurityDeleteFolder(GlobalInfo.localSpace, Int32.Parse(readValueFromConfigByNode("clearLevel").ToString()), false);
+            object msg = "会议空间已安全清除！";
+            updateStatus(msg);
+            updateLogInfo(msg);
         }
         /// <summary>
         /// 下载文件
@@ -1053,23 +1055,20 @@ namespace MeetingSystemServer
             if (fbd.ShowDialog() == DialogResult.OK)
             {
                 string desDirName = fbd.SelectedPath;
+                uploadInterface ui;
                 foreach (TreeNode tn in localSelectedFile)
                 {
-                    try
+                    if (tn.Tag.ToString() == "1")
                     {
-                        if (Directory.Exists(tn.Name))//是个目录，就拷贝
-                        {
-                            CopyDir(tn.Name, desDirName);                            
-                        }
-                        else
-                        {
-                            File.Copy(tn.Name, Path.Combine(desDirName, Path.GetFileName(tn.Name)), true);
-                        }
+                        ui = new uploadFile();
                     }
-                    catch(Exception ex)
+                    else
                     {
-                        MessageBox.Show(ex.Message+"\n"+tn.Name+"下载失败！");
+                        ui = new uploadFolder();
                     }
+                    ui.setSrc(tn.Name);
+                    ui.setDes(fbd.SelectedPath);
+                    ui.upload();
                 }
                 MessageBox.Show("文件下载完成！","提示！",MessageBoxButtons.OK,MessageBoxIcon.Information);
             }
@@ -1219,11 +1218,6 @@ namespace MeetingSystemServer
         /// <param name="e"></param>
         private void localFoldWatcher_Created(object sender, FileSystemEventArgs e)
         {
-            //MessageBox.Show("test2");
-            //if (e.FullPath != GlobalInfo.localSpace)
-            //    return;
-            //localSpace.Nodes.Clear();//先清空
-            //loadAllFile(GlobalInfo.localSpace,localSpace);
             //不用清空，先查看受影响的文件是哪个路径，根据路径去查找e.Name是否有匹配的，没有的话添加
             loadAllFile(e.FullPath,localSpace);
 
@@ -1248,9 +1242,8 @@ namespace MeetingSystemServer
             }
         }
         /// <summary>
-        /// 加载
+        /// 加载文件
         /// </summary>
-        /// <param name="text">文件名</param>
         /// <param name="path">全路径</param>
         /// <param name="tv"></param>
         private void loadAllFile(string path, TreeView tv)
@@ -1283,12 +1276,14 @@ namespace MeetingSystemServer
                 {
                     tn.ImageIndex = getIndexByFileExtention(".folder");
                     tn.SelectedImageIndex = tn.ImageIndex;
+                    tn.Tag = 0; //目录
                 }
                 else
                 {
                     //文件的话
                     tn.ImageIndex = getIndexByFileExtention(Path.GetExtension(path));
                     tn.SelectedImageIndex = tn.ImageIndex;
+                    tn.Tag = 1; //文件
                 }
                 tv.Nodes.Add(tn);
                 //tv.ExpandAll();
@@ -1302,12 +1297,14 @@ namespace MeetingSystemServer
                 {
                     tn.ImageIndex = 0;
                     tn.SelectedImageIndex = 0;
+                    tn.Tag = 0;
                 }
                 else
                 {
                     //文件的话
                     tn.ImageIndex = getIndexByFileExtention(Path.GetExtension(path));
                     tn.SelectedImageIndex = tn.ImageIndex;
+                    tn.Tag = 1;
                 }
                 parentNode.Nodes.Add(tn);
                 //parentNode.ExpandAll();
@@ -1316,7 +1313,7 @@ namespace MeetingSystemServer
         /// <summary>
         /// 根据文件后缀名获取图像index
         /// </summary>
-        /// <param name="fileName"></param>
+        /// <param name="ext"></param>
         /// <returns></returns>
         private int getIndexByFileExtention(string ext)
         {
@@ -1359,7 +1356,7 @@ namespace MeetingSystemServer
         /// <summary>
         /// 根据节点值获取子目录
         /// </summary>
-        /// <param name="tn"></param>
+        /// <param name="node"></param>
         private void loadChildFileByNode(TreeNode node)
         {
             DirectoryInfo dir = new DirectoryInfo(node.Name);
@@ -1473,56 +1470,62 @@ namespace MeetingSystemServer
         {
             if (e.Node.Checked)
             {
-                bool isAdd = true;
-                foreach (TreeNode tn in localSelectedFile)
+                localSelectedFile.Add(e.Node);
+            }
+            else
+            {
+                localSelectedFile.Remove(e.Node);
+            }
+            if (e.Node.Nodes.Count > 0)
+            {
+                bool NoFalse = true;
+                foreach (TreeNode tn in e.Node.Nodes)
                 {
-                    if (e.Node.Name.Contains(tn.Name)&&(!Path.GetDirectoryName(e.Node.Name).Equals(Path.GetDirectoryName(tn.Name))))
+                    if (tn.Checked == false)
                     {
-                        isAdd = false; //如果存在父目录，则不用在添加
-                        break;
+                        NoFalse = false;
                     }
                 }
-                if (isAdd&&!localSelectedFile.Contains(e.Node))
+                if (e.Node.Checked == true || NoFalse)
                 {
-                    localSelectedFile.Add(e.Node);
-                }
-                if (Directory.Exists(e.Node.Name))//如果是文件夹
-                {
-                    if (e.Node.Nodes.Count != 0)
+                    foreach (TreeNode tn in e.Node.Nodes)
                     {
-                        foreach (TreeNode tn in e.Node.Nodes)
+                        if (tn.Checked != e.Node.Checked)
                         {
-                            tn.Checked = true;
-
+                            tn.Checked = e.Node.Checked;
                         }
                     }
                 }
             }
-            else
+            if (e.Node.Parent != null && e.Node.Parent is TreeNode)
             {
-                //先检查他的父节点是否被选中，如果是选中状态，则不允许取消
-                if (e.Node.Parent != null && e.Node.Parent.Checked)
+                bool ParentNode = true;
+                foreach (TreeNode tn in e.Node.Parent.Nodes)
                 {
-                    e.Node.Checked = true;
-                    return;
-                }
-                //检查是否存在，存在就删除
-                if (localSelectedFile.Contains(e.Node))
-                {
-                    localSelectedFile.Remove(e.Node);
-                }
-                //判断是否是文件夹
-                if (Directory.Exists(e.Node.Name))
-                {
-                    if (e.Node.Nodes.Count != 0)
+                    if (tn.Checked == false)
                     {
-                        foreach (TreeNode tn in e.Node.Nodes)
-                        {
-                            tn.Checked = false;
-                        }
+                        ParentNode = false;
                     }
                 }
-
+                if (e.Node.Parent.Checked != ParentNode && (e.Node.Checked == false || e.Node.Checked == true && e.Node.Parent.Checked == false))
+                {
+                    e.Node.Parent.Checked = ParentNode;
+                }
+            }  
+        }
+        /// <summary>
+        /// 同步子节点
+        /// </summary>
+        /// <param name="pNode"></param>
+        /// <param name="checkedState"></param>
+        private void synChildNode(TreeNode pNode, Boolean checkedState)
+        {
+            if (pNode == null)
+                return;
+            foreach (TreeNode tn in pNode.Nodes)
+            {
+                tn.Checked = checkedState;
+                synChildNode(tn, checkedState);
             }
         }
         /// <summary>
@@ -1537,12 +1540,15 @@ namespace MeetingSystemServer
             fbd.ShowNewFolderButton = true;            
             if (fbd.ShowDialog() == DialogResult.OK)
             {
+                uploadInterface up = new uploadFolder();
+                up.setSrc(fbd.SelectedPath);
+                up.setDes(GlobalInfo.localSpace);
                 try
                 {
-                    Thread addFolderThread = new Thread(new ParameterizedThreadStart(processAddFolder));
+                    Thread addFolderThread = new Thread(new ParameterizedThreadStart(processUpload));
                     waitForm.waitForm wf = new waitForm.waitForm();
                     wf.setText("正在上传文件夹，请稍后...");
-                    wf.setMonit(addFolderThread, fbd.SelectedPath);
+                    wf.setMonit(addFolderThread, up);
                     wf.ShowDialog();
                 }
                 catch (Exception ex)
@@ -1552,83 +1558,6 @@ namespace MeetingSystemServer
                     updateStatus(msg);
                     MessageBox.Show(msg.ToString(),"警告",MessageBoxButtons.OK,MessageBoxIcon.Warning);
                 }
-            }
-        }
-        /// <summary>
-        /// 处理上传文件夹委托
-        /// </summary>
-        /// <param name="path"></param>
-        private void processAddFolder(object path)
-        {
-            string folderPath = (string)path;
-            CopyDir(folderPath, GlobalInfo.localSpace);
-            object msg = "文件夹" + folderPath + "上传成功！";
-            updateStatus(msg);
-            updateLogInfo(msg);
-        }
-        /// <summary>
-        /// 文件夹copy
-        /// </summary>
-        /// <param name="sDir">源文件夹</param>
-        /// <param name="dDir">目标路径</param>
-        private void CopyDir(string sDir,string dDir)
-        {
-            if (!Directory.Exists(sDir))
-            {
-                MessageBox.Show("文件夹:"+sDir+"不存在！");
-                return;
-            }
-            if (!Directory.Exists(dDir))
-            {
-                MessageBox.Show("文件夹:" + dDir + "不存在！");
-                return;
-            }
-            //检查dDir下是否存在sDir的名字，存在提示，不存在，则新建
-            string sFoldName = Path.GetFileName(sDir);
-            string dFoldName = Path.Combine(dDir, sFoldName);
-            if (Directory.Exists(dFoldName))
-            {
-                if (MessageBox.Show("已存在相同文件夹，是否覆盖？", "提示", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
-                {
-                    MessageBox.Show("已结束上传操作！");
-                    return;
-                }
-                else
-                {
-                    try
-                    {
-                        Directory.Delete(dFoldName, true);
-                        Directory.CreateDirectory(dFoldName);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message+"\n"+"创建目录失败！");
-                    }
-                }
-            }
-            else
-            {
-                Directory.CreateDirectory(dFoldName);
-            }
-            //遍历源路径下所有文件，进行复制
-            string[] fileList = Directory.GetFileSystemEntries(sDir);
-            try
-            {
-                foreach (string str in fileList)
-                {
-                    if (File.Exists(str))//文件
-                    {
-                        File.Copy(str, Path.Combine(dFoldName, Path.GetFileName(str)));
-                    }
-                    else//文件夹
-                    {
-                        CopyDir(str, dFoldName);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message + "\n" + "子目录拷贝失败！");
             }
         }
         /// <summary>
@@ -1655,26 +1584,48 @@ namespace MeetingSystemServer
         /// <param name="e"></param>
         private void localSpace_DragDrop(object sender, DragEventArgs e)
         {
-            // MessageBox.Show("test2");
             string[] pathList = (string[])e.Data.GetData(DataFormats.FileDrop);
+            uploadInterface ui;
             foreach (string str in pathList)
             {
-                try
+                if (File.Exists(str))
                 {
-                    if (File.Exists(str)) //是文件
-                    {
-                        File.Copy(str, Path.Combine(GlobalInfo.localSpace, Path.GetFileName(str)), false);
-                    }
-                    else if (Directory.Exists(str))
-                    {
-                        CopyDir(str, GlobalInfo.localSpace);
-                    }
+                    ui = new uploadFile();
                 }
-                catch (Exception ex)
+                else
                 {
-                    MessageBox.Show(ex.Message + "\n" + str + "上传失败！");
+                    ui = new uploadFolder();
                 }
+                ui.setSrc(str);
+                ui.setDes(GlobalInfo.localSpace);
+                Thread upLoadThread = new Thread(new ParameterizedThreadStart(processUpload));
+                waitForm.waitForm wf = new waitForm.waitForm();
+                wf.setText("正在上传文件夹，请稍后...");
+                wf.setMonit(upLoadThread, ui);
+                wf.ShowDialog();
             }
+        }
+        /// <summary>
+        /// 处理上传操作
+        /// </summary>
+        /// <param name="ui"></param>
+        private void processUpload(object ui)
+        {
+            uploadInterface up = (uploadInterface)ui;
+            try
+            {
+                int rst=up.upload();
+                object msg = ((up.getTag() == 0) ? "文件夹" : "文件") + up.getFileName() + "上传"+((rst==0)?"成功！":"失败！");
+                updateStatus(msg);
+                updateLogInfo(msg);
+            }
+            catch (Exception ex)
+            {
+                object msg = (up.getTag() == 0) ? "文件夹" : "文件" + up.getFileName() + "上传失败！";
+                updateStatus(msg);
+                updateLogInfo(msg+ex.Message);
+            }
+
         }
         /// <summary>
         /// 选中所有文件
@@ -1687,7 +1638,8 @@ namespace MeetingSystemServer
                 return;
             foreach (TreeNode tn in localSpace.Nodes)
             {
-                tn.Checked = true;
+                if(tn.Checked==false)
+                   tn.Checked = true;
             }
         }
         /// <summary>
@@ -1699,9 +1651,11 @@ namespace MeetingSystemServer
         {
             if (localSpace.Nodes.Count == 0)
                 return;
+            selectAllFileBtn_Click(null, null);//先全选以下，再释放
             foreach (TreeNode tn in localSpace.Nodes)
             {
-                tn.Checked = false;
+                if(tn.Checked)
+                  tn.Checked = false;
             }
         }
         /// <summary>
@@ -1857,6 +1811,8 @@ namespace MeetingSystemServer
         /// <param name="e"></param>
         private void restartBtn_Click(object sender, EventArgs e)
         {
+            if (MessageBox.Show("确定重启远程客户端？", "提示！", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
+                return;
             if (selectUser.Count == 0)
             {
                 MessageBox.Show("请选择欲重启的客户端！");

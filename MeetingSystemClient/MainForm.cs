@@ -318,6 +318,8 @@ namespace MeetingSystemClient
                             fileSize = BitConverter.ToInt64(recv, DataService.DataService.HeadLength);//获取8字节文件大小
                             realFileSize = fileSize;
                             fileName = Encoding.Unicode.GetString(recv, DataService.DataService.HeadLength + 8, receiveNumber - DataService.DataService.HeadLength - 8);
+                            if(waterMark)
+                                fileName =fileName.Substring(0, fileName.Length - 4);//截取掉.dat
                             Console.WriteLine("检测到文件数据：文件名为："+fileName+"文件大小为："+fileSize);
                             //如果文件大小为0，则下次不会接收到数据，因此需要在此处立即建立空文件即可
                             DataService.DataService.SendCommand(myClientSocket, DataService.DataService.recvFileHeadSuccess);//答复
@@ -591,13 +593,26 @@ namespace MeetingSystemClient
                 clearMeetingSpace();
                 //并告知主控退出了会议
                 sendExitMsgToHost();
-                //this.Close();
-                Application.Exit();
+                //清除基本信息
+                clearBaseInfo();
+                //最小化到状态栏
+                this.WindowState = FormWindowState.Minimized;
+                //应用退出
+                //Application.Exit();
             }
             else
             {
                 return;
             }
+        }
+        /// <summary>
+        /// 清除会议基本信息
+        /// </summary>
+        private void clearBaseInfo()
+        {
+            meetingTopic.Clear();
+            meetingDepart.Clear();
+            creater.Clear();
         }
         /// <summary>
         /// 发送退出会议指令至主机
@@ -623,6 +638,18 @@ namespace MeetingSystemClient
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void uploadBtn_Click(object sender, EventArgs e)
+        {
+            if(MessageBox.Show("将自动收集有变更文件，并回传至控制中心，是否确定？","提示！",MessageBoxButtons.YesNo,MessageBoxIcon.Question)==DialogResult.Yes)
+            {
+                Thread uploadProcess = new Thread(new ThreadStart(processUpload));
+                uploadProcess.Start();
+                return;
+            }                        
+        }
+        /// <summary>
+        /// 处理回传事务
+        /// </summary>
+        private void processUpload()
         {
             //收集会议空间中变化的文件
             collectChangedFile(GlobalInfo.MeetingFold);
@@ -728,25 +755,7 @@ namespace MeetingSystemClient
                 CreateFolder(clientSocket, DirName);
             if (waterMark) //兼容水印处理
             {
-                try
-                {
-                    //现将该文件copy至临时目录，然后进行水印处理，同时更新basepath、transfilename
-                    string destFileName = Path.GetTempPath() + Path.GetFileName(fileName);
-                    if (File.Exists(destFileName))
-                    {
-                        File.Delete(destFileName);
-                    }
-                    File.Copy(fileName, destFileName);
-                    File.Move(destFileName, destFileName);
-                    //先加密处理
-
-                    basePath = Path.GetTempPath().Substring(0, Path.GetTempPath().Length - 1);
-                    transFileName = destFileName;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
+                DataService.DataService.deleteMark(fileName, out basePath, out transFileName);
             }
 
             if (DataService.DataService.SendFile(clientSocket, basePath, transFileName, encrypt) == 0)

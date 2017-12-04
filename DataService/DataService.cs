@@ -50,34 +50,6 @@ namespace DataService
         public const string objectHasExist = "2000";//对象已存在 ，主要用于创建文件或文件夹时
         public const string createError = "2001";//创建失败。
 
-
-        ///// <summary>
-        ///// 发送字节
-        ///// </summary>
-        ///// <param name="connectSocket">已连接的Socket</param>
-        ///// <param name="sendDate">欲发送的数据</param>
-        ///// <returns></returns>
-        //public static int sendBytes(Socket connectSocket, byte[] sendData)
-        //{
-        //    int byteSend = 0;
-        //    while (byteSend < sendData.Length)
-        //    {
-        //        int size = 0;
-        //        if (sendData.Length - byteSend > Buff_Size)
-        //        {
-        //            size = Buff_Size;
-        //        }
-        //        else
-        //        {
-        //            size = sendData.Length - byteSend;
-        //        }
-        //        byteSend += connectSocket.Send(sendData, byteSend, size, SocketFlags.None);
-        //        Console.WriteLine("已向"+((IPEndPoint)connectSocket.RemoteEndPoint).Address.ToString()+"发送"+byteSend+"数据！共"+ sendData.Length+"数据");
-        //        //Thread.Sleep(10);
-        //    }
-        //    Thread.Sleep(100);
-        //    return byteSend;
-        //}
         /// <summary>
         /// 发送字节
         /// </summary>
@@ -118,7 +90,7 @@ namespace DataService
         /// <param name="fileName">文件名</param>
         /// <param name="encrypt">是否加密传输</param>
         /// <returns></returns>
-        public static int SendFile(Socket connectSocket, string basePath,string fileName,Boolean encrypt)
+        public static int SendFile(Socket connectSocket, string basePath,string fileName,bool encrypt)
         {         
             /*思路：先发送文件名和长度，等待回应后再发数据，可以处理数据与头混乱的情况*/
             try
@@ -220,7 +192,6 @@ namespace DataService
                 resp = Encoding.Unicode.GetString(recv, DataService.HeadLength + DataService.cmdLength, DataService.cmdLength);
                 return resp;
             }
-
             return null;
         }
         /// <summary>
@@ -282,16 +253,51 @@ namespace DataService
             }
             return 0;
         }
+        /// <summary>
+        /// 生成uuid
+        /// </summary>
+        /// <returns></returns>
+        public static string generateUUID()
+        {
+            string ret = "";
+            string allString = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            char[] rtn = new char[14];
+            Guid guid = Guid.NewGuid();
+            var ba = guid.ToByteArray();
+            for (var i = 0; i < 14; i++)
+            {
+                rtn[i] = allString[((ba[i] + ba[i + 1]) % 35)];
+            }
+            foreach (char r in rtn)
+                ret = ret + r;
+            return ret;
+        }
+        /// <summary>
+        /// 删除水印
+        /// </summary>
+        /// <param name="srcbaseName"></param>
+        /// <param name="srcFullName"></param>
+        /// <param name="desbaseName"></param>
+        /// <param name="desFullName"></param>
+        public static void deleteMark(string srcFullName, out string desbaseName, out string desFullName)
+        {
+            //改成后缀为.dat文件可以解决水印文件大小不一致问题，能够获取到正确的文件大小
+            string destFileName = Path.GetTempPath() + Path.GetFileName(srcFullName); //
+            if (File.Exists(destFileName))
+            {
+                File.Delete(destFileName);
+            }
+            File.Copy(srcFullName, destFileName);
+            File.Move(destFileName, destFileName+".dat");
+            desbaseName = Path.GetTempPath().Substring(0, Path.GetTempPath().Length - 1);
+            desFullName = destFileName;
+        }
     }
     /// <summary>
     /// 数据安全删除帮助类
     /// </summary>
     public class SecurityDelete
     {
-        //public event EventHandler FinishDeleteFileEvent = null;//删除文件完成
-        //public event EventHandler FinishDeleteFolderEvent = null;//删除目录完成
-        //public event EventHandler DeleteErrorEvent = null;//删除错误
-        //public string ErrorString = string.Empty; //错误字符串
         /// <summary>
         /// 删除文件
         /// </summary>
@@ -307,30 +313,11 @@ namespace DataService
                 }
                 if (File.Exists(filename))
                 {
-                    switch(level)
+                    for (int i = 0; i < level + 1; i++)  //删除level+1遍
                     {
-                        case 0://轻度删除 3遍 ,0,1各一遍
-                            {
-                                WriteToFile(filename, 0);
-                                WriteToFile(filename,1);
-                            }; break; 
-                        case 1://中度删除  5遍 0,1各二遍
-                            {
-                                for (int i = 0; i < 2; i++)
-                                {
-                                    WriteToFile(filename, 0);
-                                    WriteToFile(filename, 1);
-                                }
-                            };break;
-                        case 2: //深度删除 7遍 0,1各三遍
-                            {
-                                for (int i = 0; i < 3; i++)
-                                {
-                                    WriteToFile(filename, 0);
-                                    WriteToFile(filename, 1);
-                                }
-                            };break;
-                    }
+                        WriteToFile(filename, 0);
+                        WriteToFile(filename, 1);
+                    }                    
                     File.SetAttributes(filename, FileAttributes.Normal);
                     double sectors = Math.Ceiling(new FileInfo(filename).Length / 512.0);
                     byte[] dummyBuffer = new byte[512];
@@ -512,7 +499,7 @@ namespace DataService
                 }
                 catch
                 {
-                    Console.WriteLine("error!");
+                    Console.WriteLine("get watchers error at "+str+"!");
                 }
             }
         }

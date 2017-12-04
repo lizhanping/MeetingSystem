@@ -12,6 +12,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Xml;
 using System.IO;
+using System.Diagnostics;
 
 namespace MeetingSystemServer
 {
@@ -83,17 +84,19 @@ namespace MeetingSystemServer
             //新数据库
             OleDbConnection oc = GlobalInfo.GlobalConnection;
             oc.Open();
-            string sql = "insert into meetingtable(topic,department,creater,createtime) values(@topic,@deparment,@creater,@createtime)";
+            string sql = "insert into meetingtable(topic,department,creater,createtime,uuid) values(@topic,@deparment,@creater,@createtime,@uuid)";
             OleDbCommand ocmd = new OleDbCommand(sql, oc);
             ocmd.Parameters.Add("topic", OleDbType.Char);
             ocmd.Parameters.Add("department", OleDbType.Char);
             ocmd.Parameters.Add("creater", OleDbType.Char);
             ocmd.Parameters.Add("createtime", OleDbType.Date);
+            ocmd.Parameters.Add("uuid", OleDbType.Char);
 
             ocmd.Parameters["topic"].Value=GlobalInfo.MeetingTopic;
             ocmd.Parameters["department"].Value = GlobalInfo.MeetingDepart;
             ocmd.Parameters["creater"].Value = GlobalInfo.MeetingCreater;
             ocmd.Parameters["createtime"].Value = GlobalInfo.MeetingCreatTime;
+            ocmd.Parameters["uuid"].Value = DataService.DataService.generateUUID();
             try
             {
                 ocmd.ExecuteNonQuery();
@@ -368,7 +371,17 @@ namespace MeetingSystemServer
         /// <param name="e"></param>
         private void helpBtn_Click(object sender, EventArgs e)
         {
-            //todo
+            //todo 使用浏览器打开html格式文档
+            string helpFileName = Application.StartupPath + @"\doc\handbook.html";
+            if (!File.Exists(helpFileName))
+            {
+                MessageBox.Show("帮助文件已丢失，请联系管理人员！");
+                return;
+            }
+            Process process = new Process();
+            process.StartInfo.FileName = helpFileName;
+            process.Start();
+            return;
         }
         /// <summary>
         /// 提示信息

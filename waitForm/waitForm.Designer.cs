@@ -62,11 +62,9 @@
             this.Controls.Add(this.progressBar1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "waitForm";
-            this.Opacity = 0.5D;
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Form1";
-            this.TopMost = true;
             this.Load += new System.EventHandler(this.waitForm_Load);
             this.ResumeLayout(false);
             this.PerformLayout();

@@ -850,6 +850,7 @@
             // 
             // tableLayoutPanel9
             // 
+            this.tableLayoutPanel9.BackColor = System.Drawing.SystemColors.Control;
             this.tableLayoutPanel9.ColumnCount = 1;
             this.tableLayoutPanel9.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel9.Controls.Add(this.label4, 0, 1);
