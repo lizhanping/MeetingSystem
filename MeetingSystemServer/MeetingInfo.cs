@@ -228,7 +228,6 @@ namespace MeetingSystemServer
                 thread.Start();
                 */
                 updateUserInfo(); //更新用户信息
-                Console.WriteLine("22222");
             }
             catch (Exception ex)
             {
@@ -270,6 +269,7 @@ namespace MeetingSystemServer
                                 userInfo.Nodes.Add(tn);
 
                             }
+                            /*注释以下部分，解决程序因为异常闪退的情况，修改为上面部分*/
                             //foreach (string ip in GlobalInfo.remoteIPList.Keys)
                             //{
                             //    TreeNode tn = new TreeNode();
