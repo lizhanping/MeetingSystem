@@ -1,11 +1,268 @@
 ﻿<!DOCTYPE html>
-
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<html>
 <head>
-    <meta charset="utf-8" />
-    <title>会议系统帮助手册</title>
+<meta charset="utf-8">
+<meta name="description" content="">
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>会议系统使用手册</title>
+<link rel="alternate" type="application/rss+xml" title="" href="feed/index.html">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/prettify.css">
 </head>
 <body>
-<h1>会议系统帮助手册</h1>
+<div class="wrapper">
+<nav>
+ 
+  	<div class="pull-left">
+    	<h1><a href="javascript:"><img src="img/icon.png" alt="Meeting" /> <span>会议系统使用手册</span></a></h1>
+    </div>    
+</nav>
+<header>
+  <div class="container">
+    <h2 class="lone-header"><b>欢迎使用便携式无纸化会议系统</b></h2>
+  </div>
+</header>
+<section>
+  <div class="container">
+    <ul class="docs-nav">
+      <li><strong>基本信息</strong></li>
+      <li><a href="#doc-des" class="cc-active">文档目的</a></li>
+      <li><a href="#user" class="cc-active">读者对象</a></li>
+      <li><a href="#content" class="cc-active">文档内容</a></li>
+      <li><a href="#services" class="cc-active">技术服务</a></li>
+      <li class="separator"></li>
+      <li><strong>操作指南</strong></li>
+      <li><a href="#create-network" class="cc-active">搭建会议网络</a></li>
+      <li><a href="#create-meeting" class="cc-active">创建会议</a></li>
+      <li><a href="#client-manager" class="cc-active">客户端管理</a></li>
+      <li><a href="#file-manager" class="cc-active">文件管理</a>
+		<ol>
+		<li><a href="#upload" class="cc-active">文件上传</a></li>
+		<li><a href="#send" class="cc-active">文件分发</a></li>
+		<li><a href="#delete" class="cc-active">文件删除</a></li>
+		<li><a href="#download" class="cc-active">文件下载</a></li>
+		<li><a href="#look" class="cc-active">文件查看</a></li>
+		<li><a href="#edit" class="cc-active">文件编辑</a></li>
+		<li><a href="#rename" class="cc-active">文件重命名</a></li>
+		<li><a href="#client-open" class="cc-active">客户端文件打开</a></li>
+		<li><a href="#client-del" class="cc-active">客户端文件删除</a></li>
+		</ol>
+	  </li>
+      <li><a href="#log-control" class="cc-active">日志管理</a></li>
+      <li><a href="#settings" class="cc-active">系统配置</a></li>
+      <li><a href="#histroy" class="cc-active">历史记录管理</a>
+			<ol>
+				<li><a href="#watch" class="cc-active">历史查看</a></li>
+				<li><a href="#all-export" class="cc-active">全部导出</a></li>
+				<li><a href="#select-export" class="cc-active">选择导出</a></li>
+				<li><a href="#xml-import" class="cc-active">xml导入</a></li>
+				<li><a href="#xml-import" class="cc-active">xls导入</a></li>
+				<li><a href="#clear-space" class="cc-active">空间清除</a></li>
+				<li><a href="#display-change" class="cc-active">显示设置</a></li>
+			</ol>
+	  </li>
+	  <li class="separator"></li>
+	  <li><strong>常见问题及解决方法</strong></li>
+	  <li><a href="#q1" class="cc-active">问题1：怎么搭建会议网络？</a></li>
+    </ul>
+    <div class="docs-content">
+	  <h2> 基本信息</h2>
+      <h3 id="doc-des">文档目的</h3>     
+      <p>	本文档主要用于介绍便携式无纸化会议系统的使用方式，通过阅读本文档，能够使用户更快的了解会议系统所包含的功能
+		以及功能的操作方式。并对常见的问题以及相应的处理方式予以展示，帮助用户解决大部分可能遇到的问题。</p>
+      <h3 id="user"> 读者对象</h3>
+      <ul>
+        <li>会议系统用户</li>
+        <li>培训人员</li>
+      </ul>
+      <h3 id="content"> 文档内容</h3>
+      <ul>
+          <li>
+              操作指南
+              <ul>
+                  <li>搭建会议网络</li>
+                  <li>创建会议</li>
+                  <li>客户端管理</li>
+                  <li>文件管理</li>
+                  <li>日志管理</li>
+                  <li>系统配置</li>
+                  <li>历史记录管理</li>
+              </ul>
+          </li>
+        <li>常见问题及解决方法</li>
+      </ul>
+      <h3 id="services"> 技术服务</h3>
+      <p>服务支持：北京京航计算通讯研究所对本会议系统提供技术服务</p>
+	  <p>联系方式：68374899</p>
+      <hr>
+      <h2> 操作指南</h2>
+      <p>通过阅读操作指南，能够快速的帮助用户熟悉会议系统的使用方式，以下会便携式无纸化会议系统所包含的功能及使用方式予以说明：</p>
+      <h3 id="create-network"> 搭建会议网络</h3>
+      <ul>
+        <p>便携式无纸化会议系统能够使用户快速的构建会议网络，通过交换机（路由器、集线器）将参加会议的各终端（含服务端、客户端）接入网络，便可以搭建好整个会议网络。</p>
+      </ul>
+      <h3 id="create-meeting"> 创建会议</h3>
+      <ul>
+        <li><p>创建会议由安装了服务端的计算机创建，用户可以使用默认的会议主题、部门、办会人，也可以手动填写会议相关信息，进行会议的创建。</p>
+		<img src="img/create/1.png" alt="create"/>
+          </li>
+          <li>
+		<p>等待会议信息填写完毕，点击“开始会议”便可创建一个会议，并进入会议管理主界面，服务端将扫描整个网络环境，将接入网络的客户端信息显示在左侧客户端区域中。</p>
+		<img src="img/create/2.png" alt="create"/>
+              </li>
+      </ul>
+      
+      <h3 id="client-manager"> 客户端管理</h3>
+        <p>客户端管理包含：客户端刷新、选择（单独选择、全选）、取消选择（单独取消、全取消）、删除、客户端端重启</p>
+      <ul>		
+        <li>客户端刷新：一般而言，所有的终端在会议开始时，已基本接入系统完毕。客户端刷新主要用于会议期间如果有新的客户端接入后，可以由服务端进行刷新，获得新接入的客户端。</li>
+		<li>客户端选择：客户端选择在初次接入系统时，均默认为选中。客户端选择是后续操作的基础，需要给某客户端发送会议资料时，需要先将该客户端选中。</li>
+		<li>客户端取消：用于撤销对客户端的选中，支持单独的取消以及全部取消。</li>
+		<li>客户端删除：当某个客户端离开会议后或者某客户端不再参加会议时，可以将该客户端删除。删除后，如果该主机没有将物理连接断开，则使用刷新，可以继续将该客户端接入会议系统。</li>
+		<li>客户端重启：当某客户端出现故障，无法接受会议材料、无法有效关闭某些进程时，可以使用重启开关，将该客户端进行重启处理。</li>
+      </ul>
+      
+      <h3 id="file-manager"> 文件管理</h3>
+        <p>文件管理包含文件资料的本地上传、分发、删除、下载、查看、编辑、重命名等|客户端文件打开、客户端删除等操作</p>
+      <ul>
+          <li id="upload">
+              文件上传包含文件类上传和文件夹的上传:
+              <p>文件类上传：可以使用文件上传菜单，选择文件，进行上传，也可直接将文件拖入本地会议空间，完成文件的上传</p>
+              <img src="img/file/1.png" alt="File" />
+              <p>文件夹上传：通过点击上传文件夹按钮进行上传，或通过拖拽文件夹至会议空间完成文件夹的上传</p>
+              <img src="img/file/2.png" alt="Folder" />
+          </li>
+          <li id="send">
+              文件分发支持单文件、多文件、文件夹，支持单独发、群发等组合方式
+              <p>文件分发一般步骤：1.选中欲发送的客户端；2：选中欲发送的文件夹或文件；3.点击“分发”菜单完成分发操作</p>
+              <img src="img/file/3.png" alt="Send" />
+              <p>
+                  发送成功后：
+              </p>
+              <img src="img/file/3_1.png" alt="Send" />
+          </li>
+		<li id="delete">文件删除支持文件、文件夹的删除，通过选中欲删除文件，点击“删除”菜单完成删除操作。删除操作是安全清除操作，通过在<a href="#setting" class="cc-active">系统设置</a>中设置的清除程度来进行文件删除操作。
+          <p><img src="img/file/4.png" alt="Delete" /></p>
+          </li>
+		
+		<li id="download">文件下载支持文件、文件夹的下载
+          <p><img src="img/file/5.png" alt="DownLoad" /></p>
+          </li>
+		
+		<li id="look">文件查看：通过双击欲查看文件，由操作系统提供相应的查看程序进行文件查看
+          <p><img src="img/file/6.png" alt="Watch" /></p>
+          </li>
+		
+          <li>
+              id="edit">文件编辑：双击文件打开后，可进行文件的编辑操作，这部分编辑工具由操作系统支持，相应的编辑工具需要在操作系统中安装。
+              <p><img src="img/file/7.png" alt="Edit" /></p>
+          </li>
+		
+		<li id="rename">文件重命名：左键点击两次欲重命名文件，便可进入文件重命名状态，修改文件名即可实现文件重命名操作。
+          <p><img src="img/file/8.png" alt="Renam" /></p>
+          </li>
+		
+		<!--客户端-->
+		<li id="client-open">客户端文件打开
+        <p><img src="img/file/9.png" alt="Open" /></p>
+          </li>
+		<li id="client-del">客户端文件删除
+            <p>img src="img/file/10.png" alt="Delete" /></p>	
+        </li>
+			
+      </ul>
+      
+      <h3 id="log-control"> 日志管理</h3>
+      <ul>
+        <li>Colored</li>
+        <li>Grey</li>
+      </ul>
+      <h3 id="settings"> 系统设置</h3>
+        <h4>系统设置主界面，主要包含基本设置、会议默认信息配置、空间清除配置、数据备份/恢复设置、历史记录显示配置及主窗体设置</h4>
+      <ul>
+		<li>基本设置：可以设置最大客户端数量、数据传输是否加密、系统是否兼容水印</li>
+		<li>会议默认信息配置：用户可以设置默认的会议主题、部门、办会人员等，也可设置按时间进行会议主题的设置</li>
+		<li>空间清除配置：用户可以设置会议空间清除程度，包含轻度、中度、深度清除</li>
+		<li>数据备份/恢复设置：用户可以设置数据备份或恢复时默认的数据格式，包含xml格式及xls格式</li>
+		<li>历史记录显示配置：用户可以设置历史记录的显示方式，包括显示范围、显示方式的设置</li>
+          <li>
+              主窗体设置：用户可以设置主窗体的显示方式，包含背景图片的修改，是否显示控制菜单，是否最大化显示等
+              <p>配置整体界面：</p>
+              <img src="img/setting/1.png" alt="setting" />
+              <p>编辑默认设置如下图所示：</p>
+              <img src="img/setting/2.png" alt="setting" />
+          </li>
+      </ul>
+      
+      <h3 id="histroy"> 历史记录管理</h3>
+      <ol>
+          <li id="watch">
+              历史查看
+              <p>启动会议系统服务端，点击“历史记录”按钮，进入历史记录管理界面，可查看会议历史记录：</p>
+              <img src="img/history/1.png" alt="Meeting" />
+              <p>进入历史会议主界面，左侧树形显示为选定时期内的历史会议记录，上侧为菜单栏，右侧区域为选中的会议基本信息和会议空间内容；当会议空间中存在内容时，图标为亮，无内容时为暗状态。</p>
+              <img src="img/history/2.png" alt="Meeting" />
+          </li>
+          <li id="all-export">
+              全部导出
+              <p>导出模式包含两种，全部导出为将历史会议记录全部导出，导出格式由配置界面决定，包含xml格式、xls格式。</p>
+              <img src="img/history/3.png" alt="Meeting" />
+              <p>输出导出文件名称：</p>
+              <img src="img/history/4.png" alt="Meeting" />
+              <p>查看导出文件：</p>
+              <img src="img/history/5.png" alt="Meeting" />
+          </li>
+          <li id="select-export">
+              选择导出
+              <p>会议历史记录导出，支持用户自定义选择导出，可以通过设置导出条件来实现选择导出。</p>
+              <p>可设置的条件包括：会议日期、会议主题、办会部门、办会人员</p>
+              <img src="img/history/6.png" alt="Meeting">
+              <p>设置导出条件：</p>
+              <img src="img/history/7.png" alt="Meeting">
+              <p>输出导出文件名称：</p>
+              <img src="img/history/8.png" alt="Meeting" />
+              <p>查看导出文件：</p>
+              <img src="img/history/9.png" alt="Meeting" />
+          </li>
+          <li id="xml-import">
+              xml导入
+              <p>选择导入的数据源（.xml格式）</p>
+              <img src="img/history/10.png" alt="Meeting" />
+          </li>
+          <li id="xml-import">
+              xls导入
+              <p>选择导入的数据源（.xls格式）</p>
+              <img src="img/history/11.png" alt="Meeting" />
+          </li>
+          <li id="clear-space">
+              空间清除
+              <p>当会议空间不为0时，可通过点击菜单栏的“清空”菜单，对会议空间进行安全清除！</p>
+              <img src="img/history/12.png" alt="Meeting" />
+          </li>	
+          <li id="display-change">
+              显示设置
+              <p>对历史会议记录显示方式进行改变，可以通过选择显示会议记录的范围、会议空间的大小及顺序、倒序等模式进行显示。</p>
+              <img src="img/history/13.png" alt="Meeting" />
+          </li>
+      </ol>
+    </div>
+  </div>
+</section>
+<section class="vibrant centered">
+  <div class="">
+    <h2>谢谢使用便携式无纸化会议系统！</h2>
+  </div>
+</section>
+<footer>
+  <div class="">
+    <p style="color:blue"> &copy; 北京京航计算通讯研究所</p>
+  </div>
+</footer>
+</div>
+<script src="js/jquery.min.js"></script> 
+<script type="text/javascript" src="js/prettify/prettify.js"></script> 
+<script src="js/layout.js"></script>
 </body>
 </html>

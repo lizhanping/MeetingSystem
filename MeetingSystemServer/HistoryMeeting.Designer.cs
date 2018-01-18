@@ -124,14 +124,14 @@
             // 
             this.AllExportToolStripMenuItem.Name = "AllExportToolStripMenuItem";
             this.AllExportToolStripMenuItem.Size = new System.Drawing.Size(181, 26);
-            this.AllExportToolStripMenuItem.Text = "全部导出";
+            this.AllExportToolStripMenuItem.Text = "全部导出(&A)";
             this.AllExportToolStripMenuItem.Click += new System.EventHandler(this.AllExportToolStripMenuItem_Click);
             // 
             // selectExportToolStripMenuItem
             // 
             this.selectExportToolStripMenuItem.Name = "selectExportToolStripMenuItem";
             this.selectExportToolStripMenuItem.Size = new System.Drawing.Size(181, 26);
-            this.selectExportToolStripMenuItem.Text = "选择导出";
+            this.selectExportToolStripMenuItem.Text = "选择导出(&S)";
             this.selectExportToolStripMenuItem.Click += new System.EventHandler(this.selectExportToolStripMenuItem_Click);
             // 
             // displayRange

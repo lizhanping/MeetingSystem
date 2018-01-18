@@ -228,7 +228,7 @@ namespace MeetingSystemServer
                 thread.Start();
                 */
                 updateUserInfo(); //更新用户信息
-
+                Console.WriteLine("22222");
             }
             catch (Exception ex)
             {
@@ -247,27 +247,55 @@ namespace MeetingSystemServer
         private  void updateUserInfo()
         {
             //添加已连接用户
-            if (userInfo.InvokeRequired)
+            try
             {
-                this.BeginInvoke(new Action<int>(x=>
+                if (userInfo.InvokeRequired)
                 {
-                    userInfo.Nodes.Clear();
-                    foreach (string ip in GlobalInfo.remoteIPList.Keys)
+                    this.BeginInvoke(new Action(() =>
                     {
-                        TreeNode tn = new TreeNode();
-                        tn.Text = GlobalInfo.remoteIPList[ip];
-                        tn.Name = ip;
-                        tn.Checked = true;
-                        selectUser.Add(tn);
-                        userInfo.Nodes.Add(tn);
-                    }
-                    //userInfo.Nodes.Add(x);
-                }),0);
+                        userInfo.Nodes.Clear();
+                        selectUser.Clear();
+                        lock(GlobalInfo.remoteIPList)
+                        {
+                            string[] keys = GlobalInfo.remoteIPList.Keys.ToArray();
+                            for (int i = 0; i < keys.Length;i++)
+                            {
+                                string ip = keys[i];
+                                TreeNode tn = new TreeNode();
+                                tn.Text = GlobalInfo.remoteIPList[ip];
+                                tn.Name = ip;
+                                tn.Checked = true;
+                                if (!selectUser.Contains(tn))
+                                    selectUser.Add(tn);
+                                userInfo.Nodes.Add(tn);
+
+                            }
+                            //foreach (string ip in GlobalInfo.remoteIPList.Keys)
+                            //{
+                            //    TreeNode tn = new TreeNode();
+                            //    tn.Text = GlobalInfo.remoteIPList[ip];
+                            //    tn.Name = ip;
+                            //    tn.Checked = true;
+                            //    if (!selectUser.Contains(tn))
+                            //        selectUser.Add(tn);
+                            //    userInfo.Nodes.Add(tn);
+                            //}
+                        }
+                        
+                        //userInfo.Nodes.Add(x);
+                    }));
+                }
+                if (status.InvokeRequired)
+                {
+                    int cnt = GlobalInfo.remoteIPList.Count;
+                    this.BeginInvoke(new Action<int>(x => status.Text = "已连接" + x + "台客户端"), cnt);
+                }
             }
-            if(status.InvokeRequired)
+            catch (Exception ex)
             {
-                int cnt = GlobalInfo.remoteIPList.Count;
-                this.BeginInvoke(new Action<int>(x => status.Text = "已连接" + x + "台客户端"),cnt);
+                MessageBox.Show(ex.Message);
+                Console.WriteLine(ex.Message);
+                return;
             }
         }
         /// <summary>
@@ -713,6 +741,7 @@ namespace MeetingSystemServer
         /// <param name="e"></param>
         private void sendFileBtn_Click(object sender, EventArgs e)
         {
+            GlobalInfo.remoteIPList.Count();
             if (selectUser.Count == 0)
             {
                 MessageBox.Show("请先选择分发客户端！");

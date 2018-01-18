@@ -114,7 +114,15 @@ namespace MeetingSystemServer
                 //启动会议
                 MeetingInfo mi = new MeetingInfo();
                 this.Visible = false;
-                mi.ShowDialog();
+                try
+                {
+
+                    mi.ShowDialog();
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
                 this.Visible = true;
             }
             catch(Exception ex)
@@ -123,13 +131,13 @@ namespace MeetingSystemServer
                 oc.Close();
                 MessageBox.Show("会议创建失败！"+ex.Message);
                 //写日志
-                string msg = "/r/n" + GlobalInfo.MeetingCreatTime + "创建会议失败";
+                string msg = "\r\n" + GlobalInfo.MeetingCreatTime + "创建会议失败";
                 string path = Application.StartupPath + "//log.txt";
                 DataService.LogManager.logInfo(path, msg);
             }
-            #endregion
+    #endregion
 
-        }
+}
         /// <summary>
         /// 加载完毕后初始化数据库连接
         /// </summary>
